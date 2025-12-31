@@ -1,0 +1,17 @@
+name: Unit Testing
+on: [push]
+jobs:
+  unit-test:
+    name: 🧪 Unit Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔔 Check out
+        uses: actions/checkout@v3
+
+      - name: ⬇️ Python PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: "3.13"
+
+      - name: 🏃 pytest
+        run: make -C ci testing
