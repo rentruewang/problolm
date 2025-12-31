@@ -1,0 +1,51 @@
+name: AI Code Detection Check
+
+on: [push, pull_request]
+
+jobs:
+  ai-detect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install torch transformers
+
+      - name: Get changed files
+        id: files
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PRs, compare against the base branch
+            files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.py$' || true)
+          else
+            # For push events
+            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
+              # First commit - check all Python files in the commit
+              files=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep '\.py$' || true)
+            else
+              # Regular push - compare with previous commit
+              files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.py$' || true)
+            fi
+          fi
+          # Save files as multi-line string to handle spaces in filenames
+          echo "changed_files<<EOF" >> $GITHUB_ENV
+          echo "$files" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Run Detection Script
+        run: |
+          if [ -n "$changed_files" ]; then
+            echo "Checking files for AI-generated code..."
+            echo "$changed_files" | xargs -r python detect_ai.py
+          else
+            echo "No Python files changed."
+          fi
