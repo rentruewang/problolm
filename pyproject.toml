@@ -52,13 +52,6 @@ profile = "black"
 show_error_codes = true
 check_untyped_defs = true
 
-[tool.pylint."MESSAGE CONTROL"]
-disable = [
-    "unnecessary-ellipsis",
-    "redefined-builtin",
-    "redefined-outer-name",
-    "too-few-public-methods",
-]
 
 
 [tool.pytest.ini_options]
@@ -75,4 +68,3 @@ filterwarnings = [
 
 [tool.pdm]
 distribution = true
-

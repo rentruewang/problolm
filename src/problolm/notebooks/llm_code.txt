@@ -1,16 +1,16 @@
 def generate_fibonacci_sequence(n_terms: int) -> list:
     """
     Generates a list containing the Fibonacci sequence up to n terms.
-    
+
     Args:
         n_terms (int): The number of terms to generate.
-        
+
     Returns:
         list: A list of Fibonacci numbers.
     """
     # Initialize the sequence with the first two terms
     fibonacci_sequence = [0, 1]
-    
+
     # Handle cases where n_terms is less than or equal to 2
     if n_terms <= 0:
         return []
@@ -18,12 +18,12 @@ def generate_fibonacci_sequence(n_terms: int) -> list:
         return [0]
     elif n_terms == 2:
         return fibonacci_sequence
-    
+
     # Iterate to generate the remaining terms
     while len(fibonacci_sequence) < n_terms:
         next_value = fibonacci_sequence[-1] + fibonacci_sequence[-2]
         fibonacci_sequence.append(next_value)
-        
+
     return fibonacci_sequence
 
 # Example usage
