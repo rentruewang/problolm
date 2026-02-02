@@ -1,17 +1,14 @@
 """Detect AI-generated code in files using LLM perplexity."""
 
 import argparse
+import dataclasses as dcls
 import os
 import statistics
 import sys
-from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
 
-import torch  # pylint: disable=import-error
-from transformers import (  # pylint: disable=import-error
-    AutoModelForCausalLM,
-    AutoTokenizer,
-)
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 DEFAULT_MODELS = ["gpt2"]
 DEFAULT_THRESHOLD = 12.0
@@ -20,7 +17,7 @@ DEFAULT_MAX_LENGTH = 1024
 DEFAULT_MIN_TOKENS = 5
 
 
-@dataclass(frozen=True)
+@dcls.dataclass(frozen=True)
 class DetectionConfig:
     """Configuration for detection thresholds and limits."""
 
