@@ -9,8 +9,8 @@ dependencies = [
     "rich>=14.2.0",
     "pygit2>=1.19.1",
     "transformers>=4.57.3",
-    "ipykernel>=7.1.0",
     "torch>=2.9.1",
+    "requests>=2.32.5",
 ]
 requires-python = ">=3.13"
 readme = "README.md"
@@ -28,6 +28,7 @@ dev = [
     "autoflake>=2.3.1",
     "mypy>=1.19.1",
     "black>=25.12.0",
+    "pip>=26.0",
 ]
 pytest = [
     "pytest>=9.0.2",
