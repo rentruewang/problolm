@@ -5,7 +5,7 @@ import dataclasses as dcls
 import os
 import statistics
 import sys
-from typing import Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -46,9 +46,9 @@ def _env_str(name: str, default: str) -> str:
     return default if value is None or value == "" else value
 
 
-def parse_model_list(values: Iterable[str]) -> List[str]:
+def parse_model_list(values: Iterable[str]) -> list[str]:
     """Normalize comma-separated model IDs into a flat list."""
-    models: List[str] = []
+    models: list[str] = []
     for value in values:
         if not value:
             continue
@@ -59,7 +59,7 @@ def parse_model_list(values: Iterable[str]) -> List[str]:
     return models or DEFAULT_MODELS
 
 
-def resolve_device(device: Optional[str]) -> torch.device:
+def resolve_device(device: str | None) -> torch.device:
     """Resolve the requested torch device or pick a sensible default."""
     if device:
         return torch.device(device)
@@ -76,7 +76,7 @@ def effective_max_length(tokenizer, requested: int) -> int:
 
 def load_model(
     model_id: str, device: torch.device
-) -> Tuple[AutoModelForCausalLM, AutoTokenizer]:
+) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
     """Load a causal LM and tokenizer onto the requested device."""
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForCausalLM.from_pretrained(model_id)
@@ -108,7 +108,7 @@ def get_perplexity(
     return torch.exp(outputs.loss).item()
 
 
-def aggregate(scores: List[float], strategy: str) -> float:
+def aggregate(scores: list[float], strategy: str) -> float:
     """Combine per-model perplexities using the requested strategy."""
     valid = [score for score in scores if score != float("inf")]
     if not valid:
@@ -167,16 +167,16 @@ def parse_args() -> argparse.Namespace:
 
 def compute_scores(
     file_path: str,
-    model_cache: Dict[str, Tuple[AutoModelForCausalLM, AutoTokenizer]],
+    model_cache: dict[str, tuple[AutoModelForCausalLM, AutoTokenizer]],
     *,
     max_length: int,
     min_tokens: int,
-) -> List[float]:
+) -> list[float]:
     """Compute and print per-model perplexity scores for a file."""
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         content = f.read()
 
-    scores: List[float] = []
+    scores: list[float] = []
     for model_id, (model, tokenizer) in model_cache.items():
         score = get_perplexity(
             content,
@@ -197,7 +197,7 @@ def compute_scores(
 
 def analyze_file(
     file_path: str,
-    model_cache: Dict[str, Tuple[AutoModelForCausalLM, AutoTokenizer]],
+    model_cache: dict[str, tuple[AutoModelForCausalLM, AutoTokenizer]],
     *,
     config: DetectionConfig,
 ) -> bool:
@@ -232,7 +232,7 @@ def main() -> int:
 
     models = parse_model_list([args.models])
     device = resolve_device(args.device or None)
-    model_cache: Dict[str, Tuple[AutoModelForCausalLM, AutoTokenizer]] = {}
+    model_cache: dict[str, tuple[AutoModelForCausalLM, AutoTokenizer]] = {}
     config = DetectionConfig(
         max_length=args.max_length,
         min_tokens=args.min_tokens,
