@@ -33,9 +33,9 @@ def parse_model_list(values: Iterable[str]) -> list[str]:
     for value in values:
         if not value:
             continue
+
         for item in value.split(","):
-            item = item.strip()
-            if item:
+            if item := item.strip():
                 models.append(item)
     return models or DEFAULT_MODELS
 
@@ -93,18 +93,23 @@ def get_perplexity(
     return torch.exp(outputs.loss).item()
 
 
-def aggregate(scores: list[float], strategy: str) -> float:
+def aggregate_scores(scores: list[float], strategy: str) -> float:
     """Combine per-model perplexities using the requested strategy."""
     valid = [score for score in scores if score != float("inf")]
     if not valid:
         return float("inf")
-    if strategy == "min":
+
+    elif strategy == "min":
         return min(valid)
-    if strategy == "mean":
+
+    elif strategy == "mean":
         return sum(valid) / len(valid)
-    if strategy == "median":
+
+    elif strategy == "median":
         return statistics.median(valid)
-    raise ValueError(f"Unknown strategy: {strategy}")
+
+    else:
+        raise ValueError(f"Unknown strategy: {strategy}")
 
 
 def parse_args() -> Namespace:
@@ -185,6 +190,7 @@ def analyze_file(
     config: DetectionConfig,
 ) -> bool:
     """Analyze a file and return True if it should be flagged."""
+
     scores = compute_scores(
         file_path,
         model_cache,
@@ -192,7 +198,8 @@ def analyze_file(
         min_tokens=config.min_tokens,
     )
 
-    combined = aggregate(scores, config.strategy)
+    combined = aggregate_scores(scores, config.strategy)
+
     if combined != float("inf"):
         print(
             f"File: {file_path} | Combined ({config.strategy}) perplexity: {combined:.2f}"
@@ -201,43 +208,37 @@ def analyze_file(
     if combined < config.threshold:
         print(f"⚠️ WARNING: {file_path} looks highly predictable (Potential AI).")
         return True
-
-    return False
+    else:
+        return False
 
 
 def main() -> int:
     """Run the CLI entrypoint."""
     args = parse_args()
-    files = args.files
-    if not files:
+
+    if not (files := args.files):
         print("No files provided.")
         return 0
 
     models = parse_model_list([args.models])
     device = resolve_device(args.device or None)
-    model_cache: dict[str, LoadedModel] = {}
     config = DetectionConfig(
         max_length=args.max_length,
         min_tokens=args.min_tokens,
         strategy=args.strategy,
         threshold=args.threshold,
     )
-    flagged = False
 
+    model_cache: dict[str, LoadedModel] = {}
     for model_id in models:
         model_cache[model_id] = load_model(model_id, device)
 
-    for file_path in files:
-        if analyze_file(
-            file_path,
-            model_cache,
-            config=config,
-        ):
-            flagged = True
+    analysis_results = [
+        analyze_file(path, model_cache, config=config) for path in files
+    ]
 
-    if flagged:
-        return 1  # Exit with 1 to fail the build when AI code is detected
-    return 0
+    # Exit with 1 to fail the build when AI code is detected.
+    return int(any(analysis_results))
 
 
 if __name__ == "__main__":
