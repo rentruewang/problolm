@@ -4,6 +4,7 @@ import dataclasses as dcls
 import os
 import statistics
 import sys
+import typing
 from argparse import ArgumentParser, Namespace
 from collections.abc import Iterable
 
@@ -42,13 +43,19 @@ def parse_model_list(values: Iterable[str]) -> list[str]:
     return models or DEFAULT_MODELS
 
 
-def resolve_device(device: str | None) -> Device:
+def resolve_device(device: str | Device | None) -> Device:
     """Resolve the requested torch device or pick a sensible default."""
-    if device:
-        return Device(device)
 
-    device = "cuda" if cuda.is_available() else "cpu"
-    return Device(device)
+    match device:
+        case str():
+            return Device(device)
+        case Device():
+            return device
+        case None:
+            device = "cuda" if cuda.is_available() else "cpu"
+            return Device(device)
+        case _:
+            raise RuntimeError("Unreachable.")
 
 
 def effective_max_length(tokenizer: AutoTokenizer, requested: int) -> int:
@@ -66,11 +73,12 @@ class LoadedModel:
     tokenizer: AutoTokenizer
 
 
-def load_model(model_id: str, device: torch.device) -> LoadedModel:
+@typing.no_type_check
+def load_model(model_id: str, device: Device | None = None) -> LoadedModel:
     """Load a causal LM and tokenizer onto the requested device."""
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForCausalLM.from_pretrained(model_id)
-    model.to(device)
+    model.to(resolve_device(device))
     model.eval()
     return LoadedModel(model, tokenizer)
 
@@ -164,12 +172,12 @@ def compute_scores(
     *,
     max_length: int,
     min_tokens: int,
-) -> list[float]:
+) -> dict[str, float]:
     """Compute and print per-model perplexity scores for a file."""
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         content = f.read()
 
-    scores: list[float] = []
+    scores: dict[str, float] = {}
     for model_id, loaded in model_cache.items():
         score = get_perplexity(
             content,
@@ -178,11 +186,8 @@ def compute_scores(
             max_length=max_length,
             min_tokens=min_tokens,
         )
-        scores.append(score)
-        if score == float("inf"):
-            score_display = "skipped"
-        else:
-            score_display = f"{score:.2f}"
+        scores[model_id] = score
+        score_display = "skipped" if score == float("inf") else f"{score:.2f}"
         print(f"File: {file_path} | Model: {model_id} | Perplexity: {score_display}")
 
     return scores
@@ -203,7 +208,7 @@ def analyze_file(
         min_tokens=config.min_tokens,
     )
 
-    combined = aggregate_scores(scores, config.strategy)
+    combined = aggregate_scores(list(scores.values()), config.strategy)
 
     if combined != float("inf"):
         print(
@@ -217,6 +222,13 @@ def analyze_file(
         return False
 
 
+def load_requested_models(models: list[str], device: str | Device | None = None):
+    model_cache: dict[str, LoadedModel] = {}
+    for model_id in models:
+        model_cache[model_id] = load_model(model_id, device)
+    return model_cache
+
+
 def main() -> int:
     """Run the CLI entrypoint."""
     args = parse_args()
@@ -226,7 +238,7 @@ def main() -> int:
         return 0
 
     models = parse_model_list([args.models])
-    device = resolve_device(args.device or None)
+    resolve_device(args.device or None)
     config = DetectionConfig(
         max_length=args.max_length,
         min_tokens=args.min_tokens,
@@ -234,9 +246,7 @@ def main() -> int:
         threshold=args.threshold,
     )
 
-    model_cache: dict[str, LoadedModel] = {}
-    for model_id in models:
-        model_cache[model_id] = load_model(model_id, device)
+    model_cache = load_requested_models(models)
 
     analysis_results = [
         analyze_file(path, model_cache, config=config) for path in files
