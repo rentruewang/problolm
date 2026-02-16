@@ -1,6 +1,7 @@
 """Detect AI-generated code in files using LLM perplexity."""
 
 import dataclasses as dcls
+import functools
 import os
 import statistics
 import sys
@@ -12,6 +13,8 @@ import torch
 from torch import cuda
 from torch import device as Device
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+__all__ = ["load_hf_model", "analyze_file"]
 
 DEFAULT_MODELS = ["gpt2"]
 DEFAULT_THRESHOLD = 12.0
@@ -73,9 +76,15 @@ class LoadedModel:
     tokenizer: AutoTokenizer
 
 
-@typing.no_type_check
-def load_model(model_id: str, device: Device | None = None) -> LoadedModel:
+def load_hf_model(model_id: str, device: str | None = None) -> LoadedModel:
     """Load a causal LM and tokenizer onto the requested device."""
+    torch_device = resolve_device(device)
+    return _load_hf_model_to_dev_cached(model_id=model_id, device=torch_device)
+
+
+@typing.no_type_check
+@functools.cache
+def _load_hf_model_to_dev_cached(model_id: str, device: Device):
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForCausalLM.from_pretrained(model_id)
     model.to(resolve_device(device))
@@ -83,15 +92,17 @@ def load_model(model_id: str, device: Device | None = None) -> LoadedModel:
     return LoadedModel(model, tokenizer)
 
 
-def get_perplexity(
+def preplexity_of_model(
     text: str,
-    model: AutoModelForCausalLM,
-    tokenizer: AutoTokenizer,
+    loaded: LoadedModel,
     *,
     max_length: int,
     min_tokens: int,
 ) -> float:
     """Compute perplexity for text using a preloaded model/tokenizer."""
+    model = loaded.model
+    tokenizer = loaded.tokenizer
+
     max_length = effective_max_length(tokenizer, max_length)
     inputs = tokenizer(
         text, return_tensors="pt", truncation=True, max_length=max_length
@@ -168,21 +179,27 @@ def parse_args() -> Namespace:
 
 def compute_scores(
     file_path: str,
-    model_cache: dict[str, LoadedModel],
+    models: list[str],
     *,
+    device: str | None,
     max_length: int,
     min_tokens: int,
 ) -> dict[str, float]:
-    """Compute and print per-model perplexity scores for a file."""
+    """
+    Compute and print per-model perplexity scores for a file.
+
+    Load a model, then compute perplexity with the model.
+    """
+
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         content = f.read()
 
     scores: dict[str, float] = {}
-    for model_id, loaded in model_cache.items():
-        score = get_perplexity(
+    for model_id in models:
+        loaded = load_hf_model(model_id, device=device)
+        score = preplexity_of_model(
             content,
-            loaded.model,
-            loaded.tokenizer,
+            loaded,
             max_length=max_length,
             min_tokens=min_tokens,
         )
@@ -195,15 +212,21 @@ def compute_scores(
 
 def analyze_file(
     file_path: str,
-    model_cache: dict[str, LoadedModel],
+    models: list[str],
     *,
+    device: str | None = None,
     config: DetectionConfig,
 ) -> bool:
-    """Analyze a file and return True if it should be flagged."""
+    """
+    Analyze a file and return True if it should be flagged.
+
+    First compute the scores with different models, then aggregate the scores.
+    """
 
     scores = compute_scores(
         file_path,
-        model_cache,
+        models,
+        device=device,
         max_length=config.max_length,
         min_tokens=config.min_tokens,
     )
@@ -222,13 +245,6 @@ def analyze_file(
         return False
 
 
-def load_requested_models(models: list[str], device: str | Device | None = None):
-    model_cache: dict[str, LoadedModel] = {}
-    for model_id in models:
-        model_cache[model_id] = load_model(model_id, device)
-    return model_cache
-
-
 def main() -> int:
     """Run the CLI entrypoint."""
     args = parse_args()
@@ -238,7 +254,7 @@ def main() -> int:
         return 0
 
     models = parse_model_list([args.models])
-    resolve_device(args.device or None)
+    device: str | None = args.device or None
     config = DetectionConfig(
         max_length=args.max_length,
         min_tokens=args.min_tokens,
@@ -246,10 +262,8 @@ def main() -> int:
         threshold=args.threshold,
     )
 
-    model_cache = load_requested_models(models)
-
     analysis_results = [
-        analyze_file(path, model_cache, config=config) for path in files
+        analyze_file(path, models, device=device, config=config) for path in files
     ]
 
     # Exit with 1 to fail the build when AI code is detected.
