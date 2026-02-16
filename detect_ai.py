@@ -8,6 +8,8 @@ from argparse import ArgumentParser, Namespace
 from collections.abc import Iterable
 
 import torch
+from torch import cuda
+from torch import device as Device
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 DEFAULT_MODELS = ["gpt2"]
@@ -40,19 +42,22 @@ def parse_model_list(values: Iterable[str]) -> list[str]:
     return models or DEFAULT_MODELS
 
 
-def resolve_device(device: str | None) -> torch.device:
+def resolve_device(device: str | None) -> Device:
     """Resolve the requested torch device or pick a sensible default."""
     if device:
-        return torch.device(device)
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return Device(device)
+
+    device = "cuda" if cuda.is_available() else "cpu"
+    return Device(device)
 
 
-def effective_max_length(tokenizer, requested: int) -> int:
+def effective_max_length(tokenizer: AutoTokenizer, requested: int) -> int:
     """Clamp requested max length to the tokenizer's model limit when set."""
     max_len = getattr(tokenizer, "model_max_length", None)
     if max_len and max_len < 1_000_000:
         return min(requested, max_len)
-    return requested
+    else:
+        return requested
 
 
 @dcls.dataclass
@@ -95,8 +100,8 @@ def get_perplexity(
 
 def aggregate_scores(scores: list[float], strategy: str) -> float:
     """Combine per-model perplexities using the requested strategy."""
-    valid = [score for score in scores if score != float("inf")]
-    if not valid:
+
+    if not (valid := [score for score in scores if score != float("inf")]):
         return float("inf")
 
     elif strategy == "min":
