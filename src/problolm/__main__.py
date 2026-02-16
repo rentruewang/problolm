@@ -1,3 +1,5 @@
+# Copyright (c) ProBloLM Authors - All Rights Reserved
+
 """Detect AI-generated code in files using LLM perplexity."""
 
 import dataclasses as dcls
