@@ -17,4 +17,4 @@ COPY . /app/
 RUN pdm install -G:all
 
 # Set the default command to run the Python script, but allow overriding
-ENTRYPOINT ["pdm", "run", "python", "detect_ai.py"]
+ENTRYPOINT ["pdm", "run", "python", "-m", "problolm"]
