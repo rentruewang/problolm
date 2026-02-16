@@ -1,10 +1,10 @@
 """Detect AI-generated code in files using LLM perplexity."""
 
-import argparse
 import dataclasses as dcls
 import os
 import statistics
 import sys
+from argparse import ArgumentParser, Namespace
 from collections.abc import Iterable
 
 import torch
@@ -25,25 +25,6 @@ class DetectionConfig:
     min_tokens: int
     strategy: str
     threshold: float
-
-
-def _env_float(name: str, default: float) -> float:
-    value = os.getenv(name)
-    if value is None or value == "":
-        return default
-    return float(value)
-
-
-def _env_int(name: str, default: int) -> int:
-    value = os.getenv(name)
-    if value is None or value == "":
-        return default
-    return int(value)
-
-
-def _env_str(name: str, default: str) -> str:
-    value = os.getenv(name)
-    return default if value is None or value == "" else value
 
 
 def parse_model_list(values: Iterable[str]) -> list[str]:
@@ -74,15 +55,19 @@ def effective_max_length(tokenizer, requested: int) -> int:
     return requested
 
 
-def load_model(
-    model_id: str, device: torch.device
-) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
+@dcls.dataclass
+class LoadedModel:
+    model: AutoModelForCausalLM
+    tokenizer: AutoTokenizer
+
+
+def load_model(model_id: str, device: torch.device) -> LoadedModel:
     """Load a causal LM and tokenizer onto the requested device."""
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForCausalLM.from_pretrained(model_id)
     model.to(device)
     model.eval()
-    return model, tokenizer
+    return LoadedModel(model, tokenizer)
 
 
 def get_perplexity(
@@ -122,44 +107,42 @@ def aggregate(scores: list[float], strategy: str) -> float:
     raise ValueError(f"Unknown strategy: {strategy}")
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args() -> Namespace:
     """Parse CLI arguments and environment defaults."""
-    parser = argparse.ArgumentParser(
-        description="Detect AI-generated code via LLM perplexity."
-    )
-    parser.add_argument("files", nargs="*", help="Files to analyze.")
-    parser.add_argument(
+    parser = ArgumentParser(description="Detect AI-generated code via LLM perplexity.")
+    _ = parser.add_argument("files", nargs="*", help="Files to analyze.")
+    _ = parser.add_argument(
         "--models",
-        default=_env_str("AI_DETECT_MODELS", ""),
+        default=str(os.getenv("AI_DETECT_MODELS") or ""),
         help="Comma-separated list of model IDs (or set AI_DETECT_MODELS).",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--threshold",
         type=float,
-        default=_env_float("AI_DETECT_THRESHOLD", DEFAULT_THRESHOLD),
+        default=float(os.getenv("AI_DETECT_THRESHOLD") or DEFAULT_THRESHOLD),
         help="Perplexity threshold under which code is flagged.",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--strategy",
         choices=("min", "mean", "median"),
-        default=_env_str("AI_DETECT_STRATEGY", DEFAULT_STRATEGY),
+        default=str(os.getenv("AI_DETECT_STRATEGY") or DEFAULT_STRATEGY),
         help="How to combine multi-model perplexities.",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--max-length",
         type=int,
-        default=_env_int("AI_DETECT_MAX_LENGTH", DEFAULT_MAX_LENGTH),
+        default=int(os.getenv("AI_DETECT_MAX_LENGTH") or DEFAULT_MAX_LENGTH),
         help="Max tokens to evaluate per file.",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--min-tokens",
         type=int,
-        default=_env_int("AI_DETECT_MIN_TOKENS", DEFAULT_MIN_TOKENS),
+        default=int(os.getenv("AI_DETECT_MIN_TOKENS") or DEFAULT_MIN_TOKENS),
         help="Skip files shorter than this token length.",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--device",
-        default=_env_str("AI_DETECT_DEVICE", ""),
+        default=str(os.getenv("AI_DETECT_DEVICE") or ""),
         help="Torch device override (e.g. cpu, cuda).",
     )
     return parser.parse_args()
@@ -167,7 +150,7 @@ def parse_args() -> argparse.Namespace:
 
 def compute_scores(
     file_path: str,
-    model_cache: dict[str, tuple[AutoModelForCausalLM, AutoTokenizer]],
+    model_cache: dict[str, LoadedModel],
     *,
     max_length: int,
     min_tokens: int,
@@ -177,11 +160,11 @@ def compute_scores(
         content = f.read()
 
     scores: list[float] = []
-    for model_id, (model, tokenizer) in model_cache.items():
+    for model_id, loaded in model_cache.items():
         score = get_perplexity(
             content,
-            model,
-            tokenizer,
+            loaded.model,
+            loaded.tokenizer,
             max_length=max_length,
             min_tokens=min_tokens,
         )
@@ -197,7 +180,7 @@ def compute_scores(
 
 def analyze_file(
     file_path: str,
-    model_cache: dict[str, tuple[AutoModelForCausalLM, AutoTokenizer]],
+    model_cache: dict[str, LoadedModel],
     *,
     config: DetectionConfig,
 ) -> bool:
@@ -232,7 +215,7 @@ def main() -> int:
 
     models = parse_model_list([args.models])
     device = resolve_device(args.device or None)
-    model_cache: dict[str, tuple[AutoModelForCausalLM, AutoTokenizer]] = {}
+    model_cache: dict[str, LoadedModel] = {}
     config = DetectionConfig(
         max_length=args.max_length,
         min_tokens=args.min_tokens,
