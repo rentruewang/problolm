@@ -1,20 +1,23 @@
-FROM ubuntu:latest
-WORKDIR /app/
+ARG PYTHON_BASE=3.13-slim
+# build stage
+FROM python:$PYTHON_BASE AS builder
 
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+# install PDM
+RUN pip install -U pdm
+# disable update check
+ENV PDM_CHECK_UPDATE=false
+# copy files
+COPY pyproject.toml pdm.lock README.md /problolm/
+COPY src/ /problolm/src
 
-RUN pip3 install --upgrade pip3 && \
-    pip3 install pdm
+# install dependencies and project into the local packages directory
+WORKDIR /problolm
+RUN pdm install --check -G:all --editable
 
-RUN pdm config venv.in_project true
+# run stage
+FROM python:$PYTHON_BASE
 
-COPY . /app/
-
-RUN pdm install -G:all
-
-# Set the default command to run the Python script, but allow overriding
-ENTRYPOINT ["pdm", "run", "python", "-m", "problolm"]
+# retrieve packages from build stage
+COPY --from=builder /problolm/.venv/ /problolm/.venv
+ENV PATH="/problolm/.venv/bin:$PATH"
+ENTRYPOINT ["python", "-m", "problolm"]
