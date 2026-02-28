@@ -71,7 +71,7 @@ jobs:
         run: |
           if [ -n "$changed_files" ]; then
             echo "Checking files for AI-generated code..."
-            echo "$changed_files" | xargs -r python detect_ai.py
+            echo "$changed_files" | xargs -r python -m problolm
           else
             echo "No Python files changed."
           fi
