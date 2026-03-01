@@ -102,5 +102,9 @@ def current_pr() -> PullRequest:
     return pr(pr_num)
 
 
+def current_pr_commits():
+    return list(current_pr().commits())
+
+
 def close_current_pr() -> None:
     current_pr().close()
