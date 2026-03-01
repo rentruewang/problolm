@@ -10,6 +10,7 @@ import github3
 from github3 import GitHub
 from github3.pulls import PullRequest
 from github3.repos import Repository
+import re
 
 __all__ = ["EventType", "github_repo", "github_token"]
 
@@ -81,5 +82,25 @@ def repo() -> Repository:
 
 
 @typing.no_type_check
-def pr(number: int) -> PullRequest:
+def pr(number: int, /) -> PullRequest:
+    "Get a PR by number."
+
     return repo().pull_request(number)
+
+
+def current_pr() -> PullRequest:
+    "Get the current PR. Raise ``ValueError`` if this is not called in a PR."
+    if not event_name() == EventType.PULL_REQUEST:
+        raise ValueError("This is not a pull request!")
+
+    ref = github_ref()
+
+    if not (merge := re.fullmatch(r"refs/pull/(\d+)/merge", ref)):
+        raise ValueError(f"Cannot parse PR {merge}.")
+
+    pr_num = int(merge.group(1))
+    return pr(pr_num)
+
+
+def close_current_pr() -> None:
+    current_pr().close()

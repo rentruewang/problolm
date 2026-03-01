@@ -15,6 +15,7 @@ import torch
 from torch import cuda
 from torch import device as Device
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from . import gh
 
 __all__ = ["load_hf_model", "analyze_file"]
 
@@ -247,7 +248,7 @@ def analyze_file(
         return False
 
 
-def main() -> int:
+def analyze_changes() -> int:
     """Run the CLI entrypoint."""
     args = parse_args()
 
@@ -273,4 +274,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    close = analyze_changes()
+
+    if close:
+        gh.close_current_pr()
