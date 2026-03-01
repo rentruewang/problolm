@@ -1,110 +1,119 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-"Interact with the environment in github actions."
-import os
+"Custom github objects for easier use of github API."
+
+import dataclasses as dcls
+import functools
 import re
 import typing
-from enum import StrEnum
-from enum import auto as Auto
+from typing import Self
+from github3.exceptions import NotFoundError
 
-import github3
-from github3 import GitHub
 from github3.pulls import PullRequest
 from github3.repos import Repository
 
-__all__ = ["EventType", "github_repo", "github_token"]
+from . import envs
+
+__all__ = ["GitHubRepo", "GitHubPR", "GitHubCommit"]
 
 
-class EventType(StrEnum):
-    "The event type that we are handling."
+@dcls.dataclass(frozen=True)
+class GitHubRepo:
+    "Information about the repository name."
 
-    ISSUE = Auto()
-    PULL_REQUEST = Auto()
-    OTHER = Auto()
+    owner: str
+    "Owner of the repository."
 
+    slug: str
+    "The name of the repo."
 
-def github_repo() -> str:
-    "Get the current repo in the `owner/repo` format."
+    def __str__(self) -> str:
+        return self.url
 
-    return os.environ["GITHUB_REPOSITORY"]
+    def pr(self, number: int, /) -> "GitHubPR":
+        return GitHubPR(repo=self, number=number)
 
+    @property
+    def url(self) -> str:
+        return f"https://github.com/{self.owner}/{self.slug}"
 
-def github_token() -> str:
-    "Get the github token for authentication."
+    @functools.cached_property
+    def github3(self) -> Repository:
+        "GitHub3 integration."
 
-    return os.environ["GITHUB_TOKEN"]
+        if repo := envs.login().repository(owner=self.owner, repository=self.slug):
+            return repo
 
+        raise ValueError(
+            "Reponsitory is not found. Most likely an authentication issue."
+        )
 
-def github_sha() -> str:
-    "Get the SHA of the latest commit."
+    @classmethod
+    def from_name(cls, repo: str, /) -> Self:
+        owner, slug = repo.split("/")
+        return cls(owner=owner, slug=slug)
 
-    return os.environ["GITHUB_SHA"]
+    @classmethod
+    def from_env(cls) -> Self:
+        "Load the github repository from environment."
 
-
-def github_ref():
-    "Get info about the current ref."
-
-    return os.environ["GITHUB_REF"]
-
-
-def event_name() -> EventType:
-    "Get the event name as an enum."
-
-    event_name = os.environ["GITHUB_EVENT_NAME"]
-
-    match event_name:
-        case "pull_request":
-            return EventType.PULL_REQUEST
-        case "issue":
-            return EventType.ISSUE
-        case _:
-            return EventType.OTHER
+        return cls.from_name(envs.github_repo())
 
 
-@typing.no_type_check
-def login() -> GitHub:
-    token = github_token()
+@dcls.dataclass(frozen=True)
+class GitHubPR:
+    "The github PR."
 
-    if session := github3.login(token=token):
-        return session
+    repo: GitHubRepo
+    "The repo information."
 
-    raise ValueError("Authentication failed with your `github_token`.")
+    number: int
+    "The PR number."
+
+    def __post_init__(self) -> None:
+        try:
+            _ = self.github3
+        except NotFoundError as ne:
+            raise ValueError(
+                f"PR number {self.number} is not valid. "
+                f"Check on url: {self.url}. Is this a PR?"
+            ) from ne
+
+    def __str__(self) -> str:
+        return self.url
+
+    @property
+    def url(self):
+        return f"{self.repo.url}/pull/{self.number}"
+
+    @functools.cached_property
+    @typing.no_type_check
+    def github3(self) -> PullRequest:
+        "GitHub3 integration."
+
+        return self.repo.github3.pull_request(self.number)
+
+    @classmethod
+    def from_env(cls) -> Self:
+        "Get the PR from environment variable."
+
+        # If ``github_event()`` is not PR, or raises and error,
+        # re-raise a ``ValueError``.
+        try:
+            if envs.github_event() != "pull_request":
+                raise NotImplementedError
+        except NotImplementedError:
+            raise ValueError("Only works with PR.")
+
+        ref = envs.github_ref()
+
+        if not (merge := re.fullmatch(r"refs/pull/(\d+)/merge", ref)):
+            raise ValueError(f"Cannot parse PR {merge}.")
+
+        pr_num = int(merge.group(1))
+        return cls(repo=GitHubRepo.from_env(), number=pr_num)
 
 
-@typing.no_type_check
-def repo() -> Repository:
-    owner, repo = github_repo().split("/")
-
-    if repo := login().repository(owner=owner, repository=repo):
-        return repo
-
-    raise ValueError("Reponsitory is not found. Most likely an authentication issue.")
-
-
-@typing.no_type_check
-def pr(number: int, /) -> PullRequest:
-    "Get a PR by number."
-
-    return repo().pull_request(number)
-
-
-def current_pr() -> PullRequest:
-    "Get the current PR. Raise ``ValueError`` if this is not called in a PR."
-    if not event_name() == EventType.PULL_REQUEST:
-        raise ValueError("This is not a pull request!")
-
-    ref = github_ref()
-
-    if not (merge := re.fullmatch(r"refs/pull/(\d+)/merge", ref)):
-        raise ValueError(f"Cannot parse PR {merge}.")
-
-    pr_num = int(merge.group(1))
-    return pr(pr_num)
-
-
-def current_pr_commits():
-    return list(current_pr().commits())
-
-
-def close_current_pr() -> None:
-    current_pr().close()
+@dcls.dataclass(frozen=True)
+class GitHubCommit:
+    pass
