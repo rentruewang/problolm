@@ -6,7 +6,6 @@ import dataclasses as dcls
 import functools
 import os
 import statistics
-import sys
 import typing
 from argparse import ArgumentParser, Namespace
 from collections.abc import Iterable
@@ -15,6 +14,7 @@ import torch
 from torch import cuda
 from torch import device as Device
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from . import gh
 
 __all__ = ["load_hf_model", "analyze_file"]

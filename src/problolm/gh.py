@@ -2,6 +2,7 @@
 
 "Interact with the environment in github actions."
 import os
+import re
 import typing
 from enum import StrEnum
 from enum import auto as Auto
@@ -10,7 +11,6 @@ import github3
 from github3 import GitHub
 from github3.pulls import PullRequest
 from github3.repos import Repository
-import re
 
 __all__ = ["EventType", "github_repo", "github_token"]
 
