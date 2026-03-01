@@ -6,15 +6,17 @@ import dataclasses as dcls
 import functools
 import re
 import typing
+from collections.abc import Generator
 from typing import Self
-from github3.exceptions import NotFoundError
 
+from github3.exceptions import NotFoundError
 from github3.pulls import PullRequest
 from github3.repos import Repository
+from github3.repos.commit import RepoCommit
 
 from . import envs
 
-__all__ = ["GitHubRepo", "GitHubPR", "GitHubCommit"]
+__all__ = ["GitHubRepo", "GitHubPr", "GitHubCommit"]
 
 
 @dcls.dataclass(frozen=True)
@@ -30,8 +32,8 @@ class GitHubRepo:
     def __str__(self) -> str:
         return self.url
 
-    def pr(self, number: int, /) -> "GitHubPR":
-        return GitHubPR(repo=self, number=number)
+    def pr(self, number: int, /) -> "GitHubPr":
+        return GitHubPr(repo=self, number=number)
 
     @property
     def url(self) -> str:
@@ -61,7 +63,7 @@ class GitHubRepo:
 
 
 @dcls.dataclass(frozen=True)
-class GitHubPR:
+class GitHubPr:
     "The github PR."
 
     repo: GitHubRepo
@@ -85,6 +87,13 @@ class GitHubPR:
     @property
     def url(self):
         return f"{self.repo.url}/pull/{self.number}"
+
+    def commits(self) -> Generator["GitHubCommit"]:
+        for commit in self.github3.commits():
+            yield GitHubCommit(repo=self.repo, sha=commit.sha)
+
+    def patch(self) -> str:
+        return self.github3.patch().decode()
 
     @functools.cached_property
     @typing.no_type_check
@@ -116,4 +125,16 @@ class GitHubPR:
 
 @dcls.dataclass(frozen=True)
 class GitHubCommit:
-    pass
+    repo: GitHubRepo
+    "The PR of the commit."
+
+    sha: str
+    "The sha of the commit."
+
+    @functools.cached_property
+    @typing.no_type_check
+    def github3(self) -> RepoCommit:
+        return self.repo.github3.commit(self.sha)
+
+    def patch(self) -> str:
+        return self.github3.patch().decode()

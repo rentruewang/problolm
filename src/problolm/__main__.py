@@ -15,8 +15,6 @@ from torch import cuda
 from torch import device as Device
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from . import gh
-
 __all__ = ["load_hf_model", "analyze_file"]
 
 DEFAULT_MODELS = ["gpt2"]
@@ -277,4 +275,4 @@ if __name__ == "__main__":
     close = analyze_changes()
 
     if close:
-        gh.close_current_pr()
+        raise SystemExit(close)
