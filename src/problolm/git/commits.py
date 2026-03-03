@@ -50,17 +50,19 @@ class Commit:
         rich.print("\nDiff:")
 
         for parent in commit.parents:
-            diffs = parent.diff(commit, create_patch=True)
+            diffs = commit.diff(parent, create_patch=True)
             for diff in diffs:
                 rich.print(f"\n--- {diff.a_path} -> {diff.b_path}")
                 rich.print(_decode(diff.diff))
 
 
 def head_commit():
+    "Get the commit at the HEAD."
     return Commit(repos.repo().head.commit.hexsha)
 
 
 def git_show_cmd():
+    "The show command that is exposed publically via [project.scripts]."
 
     def show(sha: str = ""):
         commit = Commit(sha) if sha else head_commit()
