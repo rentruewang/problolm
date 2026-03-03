@@ -5,7 +5,7 @@
 groups = ["default", "dev", "jupyter", "pytest"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:57027475b909dd2698a2b8239383043631ba629cf13ba6d1152134d232f6f87a"
+content_hash = "sha256:6442227ebcdc171c22bfc919f1b0edad34cca43b09796ec2cefdab2f2dd9e57a"
 
 [[metadata.targets]]
 requires_python = ">=3.13"
@@ -487,6 +487,18 @@ files = [
 ]
 
 [[package]]
+name = "gitdb"
+version = "4.0.12"
+summary = ""
+dependencies = [
+    "smmap",
+]
+files = [
+    {file = "gitdb-4.0.12-py3-none-any.whl", hash = "sha256:67073e15955400952c6565cc3e707c554a4eea2e428946f7a4c162fab9bd9bcf"},
+    {file = "gitdb-4.0.12.tar.gz", hash = "sha256:5ef71f855d191a3326fcfbc0d5da835f26b13fbcba60c32c21091c349ffdb571"},
+]
+
+[[package]]
 name = "github3-py"
 version = "4.0.1"
 summary = ""
@@ -499,6 +511,18 @@ dependencies = [
 files = [
     {file = "github3.py-4.0.1-py3-none-any.whl", hash = "sha256:a89af7de25650612d1da2f0609622bcdeb07ee8a45a1c06b2d16a05e4234e753"},
     {file = "github3.py-4.0.1.tar.gz", hash = "sha256:30d571076753efc389edc7f9aaef338a4fcb24b54d8968d5f39b1342f45ddd36"},
+]
+
+[[package]]
+name = "gitpython"
+version = "3.1.46"
+summary = ""
+dependencies = [
+    "gitdb",
+]
+files = [
+    {file = "gitpython-3.1.46-py3-none-any.whl", hash = "sha256:79812ed143d9d25b6d176a10bb511de0f9c67b1fa641d82097b0ab90398a2058"},
+    {file = "gitpython-3.1.46.tar.gz", hash = "sha256:400124c7d0ef4ea03f7310ac2fbf7151e09ff97f2a3288d64a440c584a29c37f"},
 ]
 
 [[package]]
@@ -2157,6 +2181,15 @@ summary = ""
 files = [
     {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
     {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
+]
+
+[[package]]
+name = "smmap"
+version = "5.0.2"
+summary = ""
+files = [
+    {file = "smmap-5.0.2-py3-none-any.whl", hash = "sha256:b30115f0def7d7531d22a0fb6502488d879e75b260a9db4d0819cfb25403af5e"},
+    {file = "smmap-5.0.2.tar.gz", hash = "sha256:26ea65a03958fa0c8a1c7e8c7a58fdc77221b8910f6be2131affade476898ad5"},
 ]
 
 [[package]]
