@@ -26,22 +26,40 @@ class CommitType(StrEnum):
 
 
 @dcls.dataclass(frozen=True)
-class Commit:
-    "The object for the commits."
+class _RepoBase:
+    repo = "."
+    "The path for the repo"
+
+    @functools.cached_property
+    def _repo(self):
+        return repos.repo(self.repo)
+
+
+@dcls.dataclass(frozen=True)
+class _CommitBase:
 
     sha: str
     "The sha of the commit."
 
-    repo = "."
-    "The path for the repo"
+
+@dcls.dataclass(frozen=True)
+class Commit(_CommitBase, _RepoBase):
+    "The object for the commits."
 
     @functools.cached_property
     def git(self):
         return self._repo.commit(self.sha)
 
-    @functools.cached_property
-    def _repo(self):
-        return repos.repo(self.repo)
+    @property
+    def parent(self):
+        if self.type != CommitType.LINEAR:
+            raise ValueError(f"{self.type} should not be a merge commit.")
+
+        return self.git.parents[0]
+
+    @property
+    def diff(self):
+        return self.git.diff(self.parent, create_patch=True)
 
     def show(self):
         LOGGER.debug("Parsing commit hash: %s", self.sha)
@@ -57,11 +75,9 @@ class Commit:
         # Diff (like git show)
         rich.print("\nDiff:")
 
-        for parent in commit.parents:
-            diffs = commit.diff(parent, create_patch=True)
-            for diff in diffs:
-                rich.print(f"\n--- {diff.a_path} -> {diff.b_path}")
-                rich.print(_decode(diff.diff))
+        for diff in self.diff:
+            rich.print(f"\n--- {diff.a_path} -> {diff.b_path}")
+            rich.print(_decode(diff.diff))
 
     @property
     def type(self) -> CommitType:
@@ -72,6 +88,17 @@ class Commit:
                 return CommitType.LINEAR
             case _:
                 return CommitType.MERGE
+
+
+@dcls.dataclass(frozen=True)
+class _CommitRangeBase:
+    sha_start: str
+    sha_end: str
+
+
+@dcls.dataclass(frozen=True)
+class CommitRange(_CommitRangeBase, _RepoBase):
+    pass
 
 
 def head_commit() -> Commit:
