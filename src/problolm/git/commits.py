@@ -8,7 +8,7 @@ import logging
 from collections.abc import Generator
 from enum import StrEnum
 from enum import auto as Auto
-from typing import Any
+from typing import Any, Self
 
 import fire
 import rich
@@ -52,11 +52,15 @@ class Commit(_CommitBase, _RepoBase):
         return self._repo.commit(self.sha)
 
     @property
+    def parents(self) -> list[Self]:
+        return [type(self)(p.hexsha) for p in self.git.parents]
+
+    @property
     def parent(self):
         if self.type != CommitType.LINEAR:
             raise ValueError(f"{self.type} should not be a merge commit.")
 
-        return self.git.parents[0]
+        return self.parents[0]
 
     @property
     def diff(self):
