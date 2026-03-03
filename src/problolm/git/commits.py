@@ -64,7 +64,7 @@ class Commit(_CommitBase, _RepoBase):
 
     @property
     def diff(self):
-        return self.parent.diff(self.git, create_patch=True)
+        return self.parent.git.diff(self.git, create_patch=True)
 
     def show(self):
         LOGGER.debug("Parsing commit hash: %s", self.sha)
