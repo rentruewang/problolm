@@ -13,6 +13,7 @@ dependencies = [
     "github3-py>=4.0.1",
     "python-dotenv>=1.2.1",
     "gitpython>=3.1.46",
+    "fire>=0.7.1",
 ]
 requires-python = ">=3.13"
 readme = "README.md"
@@ -42,6 +43,9 @@ jupyter = [
     "ipykernel>=7.1.0",
 ]
 
+[project.scripts]
+show = "problolm.git.commits:git_show_cmd"
+
 [tool.autoflake]
 in-place = true
 recursive = true
@@ -59,8 +63,6 @@ profile = "black"
 [tool.mypy]
 show_error_codes = true
 check_untyped_defs = true
-
-
 
 [tool.pytest.ini_options]
 addopts = [

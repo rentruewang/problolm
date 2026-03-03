@@ -2,10 +2,19 @@
 
 "The commits class."
 
-from git import Commit as _Commit
-import dataclasses as dcls, functools
-from . import repo
-from git import Repo
+import dataclasses as dcls
+import functools
+import logging
+from typing import Any
+
+import fire
+import rich
+
+from . import repos
+
+__all__ = ["Commit"]
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dcls.dataclass(frozen=True)
@@ -19,9 +28,54 @@ class Commit:
     "The path for the repo"
 
     @functools.cached_property
-    def git(self) -> _Commit:
+    def git(self):
         return self._repo.commit(self.sha)
 
     @functools.cached_property
-    def _repo(self) -> Repo:
-        return repo.repo(self.repo)
+    def _repo(self):
+        return repos.repo(self.repo)
+
+    def show(self):
+        LOGGER.debug("Parsing commit hash: %s", self.sha)
+
+        commit = self.git
+
+        rich.print(f"Commit: {commit.hexsha}")
+        rich.print(f"Author: {commit.author.name} <{commit.author.email}>")
+        rich.print(f"Date: {commit.committed_datetime}")
+        rich.print("\nMessage:")
+        rich.print(commit.message)
+
+        # Diff (like git show)
+        rich.print("\nDiff:")
+
+        for parent in commit.parents:
+            diffs = parent.diff(commit, create_patch=True)
+            for diff in diffs:
+                rich.print(f"\n--- {diff.a_path} -> {diff.b_path}")
+                rich.print(_decode(diff.diff))
+
+
+def head_commit():
+    return Commit(repos.repo().head.commit.hexsha)
+
+
+def git_show_cmd():
+
+    def show(sha: str = ""):
+        commit = Commit(sha) if sha else head_commit()
+        commit.show()
+
+    fire.Fire(show)
+
+
+def _decode(item: Any) -> str:
+    match item:
+        case str():
+            return item
+
+        case bytes():
+            return item.decode()
+
+        case _:
+            return str(item)

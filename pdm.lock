@@ -5,7 +5,7 @@
 groups = ["default", "dev", "jupyter", "pytest"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:6442227ebcdc171c22bfc919f1b0edad34cca43b09796ec2cefdab2f2dd9e57a"
+content_hash = "sha256:cf1d25aced24f09c686e4e04a92c25e4cb7649ab1a4e32e205015a934e6a875a"
 
 [[metadata.targets]]
 requires_python = ">=3.13"
@@ -466,6 +466,18 @@ summary = ""
 files = [
     {file = "filelock-3.20.1-py3-none-any.whl", hash = "sha256:15d9e9a67306188a44baa72f569d2bfd803076269365fdea0934385da4dc361a"},
     {file = "filelock-3.20.1.tar.gz", hash = "sha256:b8360948b351b80f420878d8516519a2204b07aefcdcfd24912a5d33127f188c"},
+]
+
+[[package]]
+name = "fire"
+version = "0.7.1"
+summary = ""
+dependencies = [
+    "termcolor",
+]
+files = [
+    {file = "fire-0.7.1-py3-none-any.whl", hash = "sha256:e43fd8a5033a9001e7e2973bab96070694b9f12f2e0ecf96d4683971b5ab1882"},
+    {file = "fire-0.7.1.tar.gz", hash = "sha256:3b208f05c736de98fb343310d090dcc4d8c78b2a89ea4f32b837c586270a9cbf"},
 ]
 
 [[package]]
@@ -2225,6 +2237,15 @@ dependencies = [
 files = [
     {file = "sympy-1.14.0-py3-none-any.whl", hash = "sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5"},
     {file = "sympy-1.14.0.tar.gz", hash = "sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517"},
+]
+
+[[package]]
+name = "termcolor"
+version = "3.3.0"
+summary = ""
+files = [
+    {file = "termcolor-3.3.0-py3-none-any.whl", hash = "sha256:cf642efadaf0a8ebbbf4bc7a31cec2f9b5f21a9f726f4ccbb08192c9c26f43a5"},
+    {file = "termcolor-3.3.0.tar.gz", hash = "sha256:348871ca648ec6a9a983a13ab626c0acce02f515b9e1983332b17af7979521c5"},
 ]
 
 [[package]]
