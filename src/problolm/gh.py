@@ -4,6 +4,7 @@
 
 import dataclasses as dcls
 import functools
+import logging
 import re
 import typing
 from collections.abc import Generator
@@ -17,6 +18,8 @@ from github3.repos.commit import RepoCommit
 from . import envs
 
 __all__ = ["GitHubRepo", "GitHubPr", "GitHubCommit"]
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dcls.dataclass(frozen=True)
