@@ -15,7 +15,7 @@ __all__ = ["repo"]
 LOGGER = logging.getLogger(__name__)
 
 
-def repo(folder: str | Path = ".") -> Repo:
+def repo(folder: str | Path = "."):
     """
     Find the git repo that the repository is located.
     """

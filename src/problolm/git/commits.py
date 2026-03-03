@@ -5,6 +5,8 @@
 import dataclasses as dcls
 import functools
 import logging
+from enum import StrEnum
+from enum import auto as Auto
 from typing import Any
 
 import fire
@@ -15,6 +17,12 @@ from . import repos
 __all__ = ["Commit"]
 
 LOGGER = logging.getLogger(__name__)
+
+
+class CommitType(StrEnum):
+    ROOT = Auto()
+    LINEAR = Auto()
+    MERGE = Auto()
 
 
 @dcls.dataclass(frozen=True)
@@ -55,13 +63,23 @@ class Commit:
                 rich.print(f"\n--- {diff.a_path} -> {diff.b_path}")
                 rich.print(_decode(diff.diff))
 
+    @property
+    def type(self) -> CommitType:
+        match len(self.git.parents):
+            case 0:
+                return CommitType.ROOT
+            case 1:
+                return CommitType.LINEAR
+            case _:
+                return CommitType.MERGE
 
-def head_commit():
+
+def head_commit() -> Commit:
     "Get the commit at the HEAD."
     return Commit(repos.repo().head.commit.hexsha)
 
 
-def git_show_cmd():
+def git_show_cmd() -> None:
     "The show command that is exposed publically via [project.scripts]."
 
     def show(sha: str = ""):
