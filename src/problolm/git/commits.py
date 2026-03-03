@@ -59,25 +59,31 @@ class Commit(_CommitBase, _RepoBase):
 
     @property
     def diff(self):
-        return self.git.diff(self.parent, create_patch=True)
+        return self.parent.diff(self.git, create_patch=True)
 
     def show(self):
         LOGGER.debug("Parsing commit hash: %s", self.sha)
 
         commit = self.git
 
-        rich.print(f"Commit: {commit.hexsha}")
-        rich.print(f"Author: {commit.author.name} <{commit.author.email}>")
-        rich.print(f"Date: {commit.committed_datetime}")
-        rich.print("\nMessage:")
-        rich.print(commit.message)
+        sb: list[str] = []
+        sb.append(f"Commit: {commit.hexsha}")
+        sb.append(f"Author: {commit.author.name} <{commit.author.email}>")
+        sb.append(f"Date: {commit.committed_datetime}")
+        sb.append("")
+        sb.append("Message:")
+        sb.append(f"{commit.message!s}")
 
         # Diff (like git show)
-        rich.print("\nDiff:")
+        sb.append("")
+        sb.append("Diff:")
 
         for diff in self.diff:
-            rich.print(f"\n--- {diff.a_path} -> {diff.b_path}")
-            rich.print(_decode(diff.diff))
+            sb.append("")
+            sb.append(f"--- {diff.a_path} -> {diff.b_path}")
+            sb.append(_decode(diff.diff))
+
+        rich.print("\n".join(sb))
 
     @property
     def type(self) -> CommitType:
