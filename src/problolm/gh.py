@@ -16,7 +16,7 @@ from github3.repos import Repository
 from . import envs
 from .commits import Commit
 
-__all__ = ["GitHubRepo", "GitHubPr", "env_repo", "env_pr"]
+__all__ = ["GitHubRepo", "GitHubPr", "github_repo", "github_pull_request"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -64,10 +64,21 @@ class GitHubRepo:
         )
 
 
-def env_repo() -> GitHubRepo:
-    "Load the github repository from environment."
+def github_repo(repo: str = "") -> GitHubRepo:
+    """
+    The public function for creating a repo object.
 
-    return GitHubRepo.from_name(envs.github_repo())
+    Args:
+        repo:
+            If given, the repo is created with owner/slug format.
+            If not given (or ""), environment's `GITHUB_REPOSITORY` is used.
+
+    Returns:
+        A repo object.
+    """
+
+    repo = repo or envs.github_repo()
+    return GitHubRepo.from_name(repo)
 
 
 @dcls.dataclass(frozen=True)
@@ -95,7 +106,7 @@ class GitHubPr:
     def __str__(self) -> str:
         return self.url
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Commit]:
         yield from self.commits()
 
     @property
@@ -110,9 +121,22 @@ class GitHubPr:
         return self.github3.patch().decode()
 
 
-def env_pr() -> GitHubPr:
-    "Get the PR from environment variable."
+def github_pull_request(number: int, repo: str = "") -> GitHubPr:
+    """
+    Create a github pull request object.
 
+    Args:
+        number: The PR number. Must be found on github.
+        repo: Passed to ``github_repo``. See documentation there for details.
+
+    Returns:
+        A PR object.
+    """
+
+    return github_repo(repo).pr(number)
+
+
+def _parse_env_pr_num():
     # If ``github_event()`` is not PR, or raises and error,
     # re-raise a ``ValueError``.
     try:
@@ -126,5 +150,4 @@ def env_pr() -> GitHubPr:
     if not (merge := re.fullmatch(r"refs/pull/(\d+)/merge", ref)):
         raise ValueError(f"Cannot parse PR {merge}.")
 
-    pr_num = int(merge.group(1))
-    return env_repo().pr(pr_num)
+    return int(merge.group(1))
