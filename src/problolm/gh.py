@@ -15,7 +15,7 @@ from github3.pulls import PullRequest
 from github3.repos import Repository
 
 from . import envs
-from .git import Commit
+from .commits import Commit
 
 __all__ = ["GitHubRepo", "GitHubPr", "GitHubCommit"]
 
