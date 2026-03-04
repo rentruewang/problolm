@@ -2,13 +2,18 @@
 
 "The diff information."
 
+import dataclasses as dcls
+
 from .commits import Commit
 
+__all__ = ["CommitDiff"]
 
-class Diff:
-    source: Commit
-    target: Commit
+
+@dcls.dataclass(frozen=True)
+class CommitDiff:
+    newer: Commit
+    older: Commit
 
     @property
     def git(self):
-        return self.target.git.diff(self.source.git)
+        return self.newer.git.diff(self.older.git, create_patch=True)

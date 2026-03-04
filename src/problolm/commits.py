@@ -14,6 +14,7 @@ import fire
 import rich
 
 from . import repos
+from .diffs import CommitDiff
 
 __all__ = ["Commit"]
 
@@ -47,6 +48,12 @@ class _CommitBase:
 class Commit(_CommitBase, _RepoBase):
     "The object for the commits."
 
+    def __sub__(self, other: Commit):
+        return CommitDiff(newer=self, older=other)
+
+    def __rsub__(self, other: Commit):
+        return other - self
+
     @functools.cached_property
     def git(self):
         return self._repo.commit(self.sha)
@@ -64,7 +71,8 @@ class Commit(_CommitBase, _RepoBase):
 
     @property
     def diff(self):
-        return self.parent.git.diff(self.git, create_patch=True)
+        diff = self - self.parent
+        return diff.git
 
     def show(self):
         LOGGER.debug("Parsing commit hash: %s", self.sha)
