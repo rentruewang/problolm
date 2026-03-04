@@ -48,7 +48,7 @@ class Commit(_CommitBase, _RepoBase):
     "The object for the commits."
 
     def __post_init__(self):
-        assert self.git.hexsha == self.sha
+        assert self._git.hexsha == self.sha
 
     def __sub__(self, other: Commit):
         return CommitDiff(newer=self, older=other)
@@ -57,12 +57,12 @@ class Commit(_CommitBase, _RepoBase):
         return other - self
 
     @functools.cached_property
-    def git(self):
+    def _git(self):
         return self._repo.commit(self.sha)
 
     @property
     def parents(self) -> list[Self]:
-        return [type(self)(p.hexsha) for p in self.git.parents]
+        return [type(self)(p.hexsha) for p in self._git.parents]
 
     @property
     def parent(self) -> Self:
@@ -78,7 +78,7 @@ class Commit(_CommitBase, _RepoBase):
     def show(self):
         LOGGER.debug("Parsing commit hash: %s", self.sha)
 
-        commit = self.git
+        commit = self._git
 
         sb: list[str] = []
         sb.append(f"Commit: {commit.hexsha}")
@@ -99,7 +99,7 @@ class Commit(_CommitBase, _RepoBase):
 
     @property
     def type(self) -> CommitType:
-        match len(self.git.parents):
+        match len(self._git.parents):
             case 0:
                 return CommitType.ROOT
             case 1:

@@ -33,12 +33,12 @@ class CommitDiff:
     older: "Commit"
 
     def __iter__(self) -> Generator[Delta]:
-        for delta in self.git:
+        for delta in self._git:
             yield Delta(delta)
 
     @property
-    def git(self):
-        return self.newer.git.diff(self.older.git, create_patch=True)
+    def _git(self):
+        return self.newer._git.diff(self.older._git, create_patch=True)
 
 
 def _decode(item: Any) -> str:

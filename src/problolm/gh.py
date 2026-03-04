@@ -43,7 +43,7 @@ class GitHubRepo:
         return f"https://github.com/{self.owner}/{self.slug}"
 
     @functools.cached_property
-    def github3(self) -> Repository:
+    def _github3(self) -> Repository:
         "GitHub3 integration."
 
         if repo := envs.login().repository(owner=self.owner, repository=self.slug):
@@ -77,7 +77,7 @@ class GitHubPr:
 
     def __post_init__(self) -> None:
         try:
-            _ = self.github3
+            _ = self._github3
         except NotFoundError as ne:
             raise ValueError(
                 f"PR number {self.number} is not valid. "
@@ -87,23 +87,26 @@ class GitHubPr:
     def __str__(self) -> str:
         return self.url
 
+    def __iter__(self):
+        yield from self.commits()
+
     @property
     def url(self):
         return f"{self.repo.url}/pull/{self.number}"
 
     def commits(self) -> Generator[Commit]:
-        for commit in self.github3.commits():
+        for commit in self._github3.commits():
             yield Commit(commit.sha)
 
     def patch(self) -> str:
-        return self.github3.patch().decode()
+        return self._github3.patch().decode()
 
     @functools.cached_property
     @typing.no_type_check
-    def github3(self) -> PullRequest:
+    def _github3(self) -> PullRequest:
         "GitHub3 integration."
 
-        return self.repo.github3.pull_request(self.number)
+        return self.repo._github3.pull_request(self.number)
 
     @classmethod
     def from_env(cls) -> Self:
