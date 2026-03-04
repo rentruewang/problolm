@@ -20,11 +20,24 @@ class Delta:
     diff: "_Diff"
 
     def __str__(self) -> str:
+        return self._as_string(color=False)
+
+    def __rich__(self):
+        return self._as_string(color=True)
+
+    def _as_string(self, color: bool) -> str:
         sb = []
         sb.append(f"--- {self.diff.a_path}")
         sb.append(f"+++ {self.diff.b_path}")
-        sb.extend(_diff_lines(_decode(self.diff.diff)))
+        sb.extend(self._maybe_color_line_diffs(color=color))
         return "\n".join(sb)
+
+    def _maybe_color_line_diffs(self, color: bool):
+        text = _decode(self.diff.diff)
+        render = _color_line if color else lambda x: x
+
+        for line in text.splitlines():
+            yield render(line)
 
 
 @dcls.dataclass(frozen=True)
@@ -73,8 +86,3 @@ def _get_line_style(modifier: str):
 def _color_line(line: str):
     color = _get_line_style(line[0])
     return _wrap_style(line, color)
-
-
-def _diff_lines(diff: str) -> Generator[str]:
-    for line in diff.splitlines():
-        yield _color_line(line)

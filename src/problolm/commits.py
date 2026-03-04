@@ -78,10 +78,14 @@ class Commit(_CommitBase, _RepoBase):
     def show(self):
         LOGGER.debug("Parsing commit hash: %s", self.sha)
 
-        commit = self._git
+        rich.print(self._before_diff())
+        for diff in self.diff:
+            rich.print(diff)
 
+    def _before_diff(self):
+        commit = self._git
         sb: list[str] = []
-        sb.append(f"Commit: {commit.hexsha}")
+        sb.append(f"")
         sb.append(f"Author: {commit.author.name} <{commit.author.email}>")
         sb.append(f"Date: {commit.committed_datetime}")
         sb.append("")
@@ -91,11 +95,7 @@ class Commit(_CommitBase, _RepoBase):
         # Diff (like git show)
         sb.append("")
         sb.append("Diff:")
-
-        for diff in self.diff:
-            sb.extend(str(diff).splitlines())
-
-        rich.print("\n".join(sb))
+        return "\n".join(sb)
 
     @property
     def type(self) -> CommitType:
