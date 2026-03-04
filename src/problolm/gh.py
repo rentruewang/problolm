@@ -17,7 +17,7 @@ from github3.repos import Repository
 from . import envs
 from .commits import Commit
 
-__all__ = ["GitHubRepo", "GitHubPr", "GitHubCommit"]
+__all__ = ["GitHubRepo", "GitHubPr"]
 
 LOGGER = logging.getLogger(__name__)
 

@@ -5,10 +5,9 @@
 import dataclasses as dcls
 import functools
 import logging
-from collections.abc import Generator
 from enum import StrEnum
 from enum import auto as Auto
-from typing import Any, Self
+from typing import Self
 
 import fire
 import rich
@@ -63,7 +62,7 @@ class Commit(_CommitBase, _RepoBase):
         return [type(self)(p.hexsha) for p in self.git.parents]
 
     @property
-    def parent(self):
+    def parent(self) -> Self:
         if self.type != CommitType.LINEAR:
             raise ValueError(f"{self.type} should not be a merge commit.")
 
@@ -71,8 +70,7 @@ class Commit(_CommitBase, _RepoBase):
 
     @property
     def diff(self):
-        diff = self - self.parent
-        return diff.git
+        return self - self.parent
 
     def show(self):
         LOGGER.debug("Parsing commit hash: %s", self.sha)
@@ -92,9 +90,7 @@ class Commit(_CommitBase, _RepoBase):
         sb.append("Diff:")
 
         for diff in self.diff:
-            sb.append("")
-            sb.append(f"--- {diff.a_path} -> {diff.b_path}")
-            sb.extend(_diff_lines(_decode(diff.diff)))
+            sb.extend(str(diff).splitlines())
 
         rich.print("\n".join(sb))
 
@@ -133,42 +129,3 @@ def git_show_cmd() -> None:
         commit.show()
 
     fire.Fire(show)
-
-
-def _decode(item: Any) -> str:
-    match item:
-        case str():
-            return item
-
-        case bytes():
-            return item.decode()
-
-        case _:
-            return str(item)
-
-
-def _wrap_style(text: str, style: str | None) -> str:
-    if style is None:
-        return text
-
-    return f"[{style}] {text} [/{style}]"
-
-
-def _get_line_style(modifier: str):
-    match modifier:
-        case "+":
-            return "green"
-        case "-":
-            return "red"
-        case _:
-            return None
-
-
-def _color_line(line: str):
-    color = _get_line_style(line[0])
-    return _wrap_style(line, color)
-
-
-def _diff_lines(diff: str) -> Generator[str]:
-    for line in diff.splitlines():
-        yield _color_line(line)
