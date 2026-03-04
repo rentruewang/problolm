@@ -47,6 +47,9 @@ class _CommitBase:
 class Commit(_CommitBase, _RepoBase):
     "The object for the commits."
 
+    def __post_init__(self):
+        assert self.git.hexsha == self.sha
+
     def __sub__(self, other: Commit):
         return CommitDiff(newer=self, older=other)
 
