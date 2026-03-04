@@ -95,6 +95,8 @@ class GitHubPr:
     "The pr object of github."
 
     def __post_init__(self) -> None:
+        LOGGER.debug("Creating a PR object.")
+
         try:
             _ = self.github3
         except NotFoundError as ne:
@@ -121,18 +123,21 @@ class GitHubPr:
         return self.github3.patch().decode()
 
 
-def github_pull_request(number: int, repo: str = "") -> GitHubPr:
+def github_pull_request(number: int = 0, repo: str = "") -> GitHubPr:
     """
     Create a github pull request object.
 
     Args:
-        number: The PR number. Must be found on github.
+        number:
+            The PR number. Must be found on github.
+            If not given, this is parsed from `GITHUB_REF` in environment.
         repo: Passed to ``github_repo``. See documentation there for details.
 
     Returns:
         A PR object.
     """
 
+    number = number or _parse_env_pr_num()
     return github_repo(repo).pr(number)
 
 
