@@ -5,15 +5,15 @@
 import dataclasses as dcls
 import functools
 import logging
-from collections.abc import Generator
 from enum import StrEnum
 from enum import auto as Auto
-from typing import Any, Self
+from typing import Self
 
 import fire
 import rich
 
 from . import repos
+from .diffs import CommitDiff
 
 __all__ = ["Commit"]
 
@@ -47,16 +47,25 @@ class _CommitBase:
 class Commit(_CommitBase, _RepoBase):
     "The object for the commits."
 
+    def __post_init__(self):
+        assert self._git.hexsha == self.sha
+
+    def __sub__(self, other: Commit):
+        return CommitDiff(newer=self, older=other)
+
+    def __rsub__(self, other: Commit):
+        return other - self
+
     @functools.cached_property
-    def git(self):
+    def _git(self):
         return self._repo.commit(self.sha)
 
     @property
     def parents(self) -> list[Self]:
-        return [type(self)(p.hexsha) for p in self.git.parents]
+        return [type(self)(p.hexsha) for p in self._git.parents]
 
     @property
-    def parent(self):
+    def parent(self) -> Self:
         if self.type != CommitType.LINEAR:
             raise ValueError(f"{self.type} should not be a merge commit.")
 
@@ -64,15 +73,19 @@ class Commit(_CommitBase, _RepoBase):
 
     @property
     def diff(self):
-        return self.parent.git.diff(self.git, create_patch=True)
+        return self - self.parent
 
     def show(self):
         LOGGER.debug("Parsing commit hash: %s", self.sha)
 
-        commit = self.git
+        rich.print(self._before_diff())
+        for diff in self.diff:
+            rich.print(diff)
 
+    def _before_diff(self):
+        commit = self._git
         sb: list[str] = []
-        sb.append(f"Commit: {commit.hexsha}")
+        sb.append(f"")
         sb.append(f"Author: {commit.author.name} <{commit.author.email}>")
         sb.append(f"Date: {commit.committed_datetime}")
         sb.append("")
@@ -82,17 +95,11 @@ class Commit(_CommitBase, _RepoBase):
         # Diff (like git show)
         sb.append("")
         sb.append("Diff:")
-
-        for diff in self.diff:
-            sb.append("")
-            sb.append(f"--- {diff.a_path} -> {diff.b_path}")
-            sb.extend(_diff_lines(_decode(diff.diff)))
-
-        rich.print("\n".join(sb))
+        return "\n".join(sb)
 
     @property
     def type(self) -> CommitType:
-        match len(self.git.parents):
+        match len(self._git.parents):
             case 0:
                 return CommitType.ROOT
             case 1:
@@ -125,42 +132,3 @@ def git_show_cmd() -> None:
         commit.show()
 
     fire.Fire(show)
-
-
-def _decode(item: Any) -> str:
-    match item:
-        case str():
-            return item
-
-        case bytes():
-            return item.decode()
-
-        case _:
-            return str(item)
-
-
-def _wrap_style(text: str, style: str | None) -> str:
-    if style is None:
-        return text
-
-    return f"[{style}] {text} [/{style}]"
-
-
-def _get_line_style(modifier: str):
-    match modifier:
-        case "+":
-            return "green"
-        case "-":
-            return "red"
-        case _:
-            return None
-
-
-def _color_line(line: str):
-    color = _get_line_style(line[0])
-    return _wrap_style(line, color)
-
-
-def _diff_lines(diff: str) -> Generator[str]:
-    for line in diff.splitlines():
-        yield _color_line(line)

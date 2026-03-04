@@ -3,7 +3,6 @@
 "Custom github objects for easier use of github API."
 
 import dataclasses as dcls
-import functools
 import logging
 import re
 import typing
@@ -15,9 +14,9 @@ from github3.pulls import PullRequest
 from github3.repos import Repository
 
 from . import envs
-from .git import Commit
+from .commits import Commit
 
-__all__ = ["GitHubRepo", "GitHubPr", "GitHubCommit"]
+__all__ = ["GitHubRepo", "GitHubPr", "github_repo", "github_pull_request"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,37 +31,54 @@ class GitHubRepo:
     slug: str
     "The name of the repo."
 
+    github3: Repository
+    "The github3 object."
+
     def __str__(self) -> str:
         return self.url
 
+    @typing.no_type_check
     def pr(self, number: int, /) -> "GitHubPr":
-        return GitHubPr(repo=self, number=number)
+        return GitHubPr(
+            repo=self,
+            number=number,
+            github3=self.github3.pull_request(number),
+        )
 
     @property
     def url(self) -> str:
         return f"https://github.com/{self.owner}/{self.slug}"
 
-    @functools.cached_property
-    def github3(self) -> Repository:
-        "GitHub3 integration."
+    @classmethod
+    def from_name(cls, repo: str, /) -> Self:
+        owner, slug = repo.split("/")
+        return cls.from_owner_slug(owner=owner, slug=slug)
 
-        if repo := envs.login().repository(owner=self.owner, repository=self.slug):
-            return repo
+    @classmethod
+    def from_owner_slug(cls, owner: str, slug: str):
+        if repo := envs.login().repository(owner=owner, repository=slug):
+            return cls(owner=owner, slug=slug, github3=repo)
 
         raise ValueError(
             "Reponsitory is not found. Most likely an authentication issue."
         )
 
-    @classmethod
-    def from_name(cls, repo: str, /) -> Self:
-        owner, slug = repo.split("/")
-        return cls(owner=owner, slug=slug)
 
-    @classmethod
-    def from_env(cls) -> Self:
-        "Load the github repository from environment."
+def github_repo(repo: str = "") -> GitHubRepo:
+    """
+    The public function for creating a repo object.
 
-        return cls.from_name(envs.github_repo())
+    Args:
+        repo:
+            If given, the repo is created with owner/slug format.
+            If not given (or ""), environment's `GITHUB_REPOSITORY` is used.
+
+    Returns:
+        A repo object.
+    """
+
+    repo = repo or envs.github_repo()
+    return GitHubRepo.from_name(repo)
 
 
 @dcls.dataclass(frozen=True)
@@ -75,7 +91,12 @@ class GitHubPr:
     number: int
     "The PR number."
 
+    github3: PullRequest
+    "The pr object of github."
+
     def __post_init__(self) -> None:
+        LOGGER.debug("Creating a PR object.")
+
         try:
             _ = self.github3
         except NotFoundError as ne:
@@ -86,6 +107,9 @@ class GitHubPr:
 
     def __str__(self) -> str:
         return self.url
+
+    def __iter__(self) -> Generator[Commit]:
+        yield from self.commits()
 
     @property
     def url(self):
@@ -98,29 +122,37 @@ class GitHubPr:
     def patch(self) -> str:
         return self.github3.patch().decode()
 
-    @functools.cached_property
-    @typing.no_type_check
-    def github3(self) -> PullRequest:
-        "GitHub3 integration."
 
-        return self.repo.github3.pull_request(self.number)
+def github_pull_request(number: int = 0, repo: str = "") -> GitHubPr:
+    """
+    Create a github pull request object.
 
-    @classmethod
-    def from_env(cls) -> Self:
-        "Get the PR from environment variable."
+    Args:
+        number:
+            The PR number. Must be found on github.
+            If not given, this is parsed from `GITHUB_REF` in environment.
+        repo: Passed to ``github_repo``. See documentation there for details.
 
-        # If ``github_event()`` is not PR, or raises and error,
-        # re-raise a ``ValueError``.
-        try:
-            if envs.github_event() != "pull_request":
-                raise NotImplementedError
-        except NotImplementedError:
-            raise ValueError("Only works with PR.")
+    Returns:
+        A PR object.
+    """
 
-        ref = envs.github_ref()
+    number = number or _parse_env_pr_num()
+    return github_repo(repo).pr(number)
 
-        if not (merge := re.fullmatch(r"refs/pull/(\d+)/merge", ref)):
-            raise ValueError(f"Cannot parse PR {merge}.")
 
-        pr_num = int(merge.group(1))
-        return cls(repo=GitHubRepo.from_env(), number=pr_num)
+def _parse_env_pr_num():
+    # If ``github_event()`` is not PR, or raises and error,
+    # re-raise a ``ValueError``.
+    try:
+        if envs.github_event() != "pull_request":
+            raise NotImplementedError
+    except NotImplementedError:
+        raise ValueError("Only works with PR.")
+
+    ref = envs.github_ref()
+
+    if not (merge := re.fullmatch(r"refs/pull/(\d+)/merge", ref)):
+        raise ValueError(f"Cannot parse PR {merge}.")
+
+    return int(merge.group(1))
