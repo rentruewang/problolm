@@ -93,6 +93,7 @@ def _load_hf_model_to_dev_cached(model_id: str, device: Device):
     return LoadedModel(model, tokenizer)
 
 
+@typing.no_type_check
 def preplexity_of_model(
     text: str,
     loaded: LoadedModel,
