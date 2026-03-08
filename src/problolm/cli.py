@@ -271,8 +271,12 @@ def analyze_changes() -> int:
     return int(any(analysis_results))
 
 
-if __name__ == "__main__":
+def main():
     close = analyze_changes()
 
     if close:
         raise SystemExit(close)
+
+
+if __name__ == "__main__":
+    main()
