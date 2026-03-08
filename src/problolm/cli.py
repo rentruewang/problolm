@@ -93,6 +93,7 @@ def _load_hf_model_to_dev_cached(model_id: str, device: Device):
     return LoadedModel(model, tokenizer)
 
 
+@typing.no_type_check
 def preplexity_of_model(
     text: str,
     loaded: LoadedModel,
@@ -271,8 +272,12 @@ def analyze_changes() -> int:
     return int(any(analysis_results))
 
 
-if __name__ == "__main__":
+def main():
     close = analyze_changes()
 
     if close:
         raise SystemExit(close)
+
+
+if __name__ == "__main__":
+    main()

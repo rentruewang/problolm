@@ -1,12 +1,6 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-import gha
-import pdm
+from . import cli
 
 if __name__ == "__main__":
-
-    gha.setup()
-
-    pdm.sync()
-
-    pdm.run("pytest")
+    cli.main()
