@@ -7,7 +7,7 @@ import os
 import nox
 from nox import Session
 
-PYTHON_VERSIONS = ["3.13", "3.14", "3.15"]
+PYTHON_VERSIONS = ["3.13", "3.14"]
 os.environ["PDM_IGNORE_SAVED_PYTHON"] = "1"
 
 
@@ -200,7 +200,8 @@ class _Commands:
 
     def test(self):
         "``pytest`` command."
-        self.pdm.run("pytest")
+
+        self.pdm.run("pytest", *self.session.posargs)
 
     def autoflake(self):
         "``autoflake`` command."
