@@ -91,14 +91,6 @@ class Commit(CommitLike):
 
         return NotImplemented
 
-    def __lt__(self, sha: object):
-        match sha:
-            case str():
-                return self < Commit(sha)
-
-            case Commit():
-                return self in sha.ancestors()
-
     @property
     def git(self):
         commit = repos.global_repo().commit(str(self.sha))
@@ -125,6 +117,18 @@ class Commit(CommitLike):
             commit = commit.parent
 
         yield commit
+
+    def descendant_of(self, other: str | Commit) -> bool:
+        for commit in self.ancestors():
+            if commit == other:
+                return True
+
+        return False
+
+    def ancestor_of(self, other: str | Commit) -> bool:
+        other = Commit(other) if isinstance(other, str) else other
+
+        return other.descendant_of(self)
 
     @property
     def is_root(self) -> bool:
