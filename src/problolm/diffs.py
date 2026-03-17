@@ -72,7 +72,7 @@ class CommitDiff:
 
     def __repr__(self) -> str:
         num_changes = len(self.git)
-        return f"CommitDiff[{num_changes}]({self.older!r}..{self.newer!r})"
+        return f"CommitDiff[{num_changes}]({self.older!s}..{self.newer!s})"
 
     def __len__(self) -> int:
         return len(self.git)
