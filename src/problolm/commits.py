@@ -2,22 +2,32 @@
 
 "The commits class."
 
-import dataclasses as dcls
-import functools
+import contextlib as ctxl
 import logging
+import typing
 from enum import StrEnum
 from enum import auto as Auto
 from typing import Self
 
 import fire
 import rich
+from git import BadName
 
 from . import repos
-from .diffs import CommitDiff
 
-__all__ = ["Commit"]
+if typing.TYPE_CHECKING:
+    from .diffs import CommitDiff
+
+__all__ = ["Commit", "CommitType"]
 
 LOGGER = logging.getLogger(__name__)
+
+
+_SHORT_SHA_LEN: int = 7
+"The number of short SHA characters. Default to 7 (same as git)."
+
+_SHA_LEN = 40
+"The length of SHA."
 
 
 class CommitType(StrEnum):
@@ -26,64 +36,124 @@ class CommitType(StrEnum):
     MERGE = Auto()
 
 
-@dcls.dataclass(frozen=True)
-class _RepoBase:
-    repo = "."
-    "The path for the repo"
-
-    @functools.cached_property
-    def _repo(self):
-        return repos.repo(self.repo)
-
-
-@dcls.dataclass(frozen=True)
-class _CommitBase:
-
-    sha: str
-    "The sha of the commit."
-
-
-@dcls.dataclass(frozen=True)
-class Commit(_CommitBase, _RepoBase):
+class Commit:
     "The object for the commits."
 
-    def __post_init__(self):
-        assert self._git.hexsha == self.sha
+    __match_args__ = ("short_sha",)
 
-    def __sub__(self, other: Commit):
-        return CommitDiff(newer=self, older=other)
+    def __init__(self, sha: str) -> None:
+        try:
+            self._long_sha = repos.global_repo().commit(sha).hexsha
+            "The sha of the commit."
+        except BadName as bn:
+            raise ValueError from bn
 
-    def __rsub__(self, other: Commit):
-        return other - self
+        assert len(self._long_sha) == _SHA_LEN
 
-    @functools.cached_property
-    def _git(self):
-        return self._repo.commit(self.sha)
+    def __str__(self) -> str:
+        return self.short_sha
+
+    def __repr__(self) -> str:
+        return f"Commit({self!s})"
+
+    def __sub__(self, other: str | Self):
+        from .diffs import CommitDiff
+
+        match other:
+            # Is a sha.
+            case str():
+                return CommitDiff(newer=self, older=Commit(other))
+
+            # Must be in the same repo.
+            case Commit():
+                return CommitDiff(newer=self, older=other)
+
+        raise ValueError(f"{self=!r} incompatible with {other=!r}")
+
+    def __rsub__(self, other: str):
+        match other:
+            case str():
+                return Commit(other) - self
+
+        raise NotImplementedError(type(other))
+
+    def __eq__(self, sha: object) -> bool:
+        match sha:
+            # Check if it's prefix.
+            case str():
+                return self._long_sha.startswith(sha)
+
+            case Commit():
+                return self._long_sha == sha._long_sha
+
+        return NotImplemented
+
+    @property
+    def git(self):
+        commit = repos.global_repo().commit(str(self.sha))
+        assert self == commit.hexsha
+        return commit
 
     @property
     def parents(self) -> list[Self]:
-        return [type(self)(p.hexsha) for p in self._git.parents]
+        return [type(self)(sha=p.hexsha) for p in self.git.parents]
 
     @property
     def parent(self) -> Self:
         if self.type != CommitType.LINEAR:
             raise ValueError(f"{self.type} should not be a merge commit.")
 
-        return self.parents[0]
+        [parent] = self.parents
+        return parent
+
+    def ancestors(self):
+        commit = self
+
+        while not commit.is_root:
+            yield commit
+            commit = commit.parent
+
+        yield commit
+
+    def descendant_of(self, other: str | Commit) -> bool:
+        """
+        If ``self`` is descendant of ``other``.
+        """
+
+        for commit in self.ancestors():
+            if commit == other:
+                return True
+
+        return False
+
+    def ancestor_of(self, other: str | Commit) -> bool:
+        """
+        If ``self`` is ancestor of ``other``.
+        """
+
+        other = Commit(other) if isinstance(other, str) else other
+
+        return other.descendant_of(self)
+
+    def same_lineage(self, other: str | Commit) -> bool:
+        return self.descendant_of(other) or self.ancestor_of(other)
 
     @property
-    def diff(self):
+    def is_root(self) -> bool:
+        return self.type == CommitType.ROOT
+
+    def diff(self) -> "CommitDiff":
         return self - self.parent
 
-    def show(self):
-        LOGGER.debug("Parsing commit hash: %s", self.sha)
+    def show(self) -> None:
+        LOGGER.debug("Parsing commit hash: %s", self)
 
         rich.print(self._before_diff())
-        for diff in self.diff:
-            rich.print(diff)
+        for delta in self.diff():
+            rich.print(delta)
 
-    def _before_diff(self):
-        commit = self._git
+    def _before_diff(self) -> str:
+        commit = self.git
         sb: list[str] = []
         sb.append(f"")
         sb.append(f"Author: {commit.author.name} <{commit.author.email}>")
@@ -99,7 +169,7 @@ class Commit(_CommitBase, _RepoBase):
 
     @property
     def type(self) -> CommitType:
-        match len(self._git.parents):
+        match len(self.parents):
             case 0:
                 return CommitType.ROOT
             case 1:
@@ -107,21 +177,22 @@ class Commit(_CommitBase, _RepoBase):
             case _:
                 return CommitType.MERGE
 
+    @property
+    def sha(self) -> str:
+        return self._long_sha
 
-@dcls.dataclass(frozen=True)
-class _CommitRangeBase:
-    sha_start: str
-    sha_end: str
+    @property
+    def short_sha(self) -> str:
+        return self._long_sha[:_SHORT_SHA_LEN]
 
-
-@dcls.dataclass(frozen=True)
-class CommitRange(_CommitRangeBase, _RepoBase):
-    pass
+    @staticmethod
+    def set_short_size(size: int):
+        return set_short_sha_size(size)
 
 
 def head_commit() -> Commit:
     "Get the commit at the HEAD."
-    return Commit(repos.repo().head.commit.hexsha)
+    return Commit(repos.global_repo().head.commit.hexsha)
 
 
 def git_show_cmd() -> None:
@@ -132,3 +203,26 @@ def git_show_cmd() -> None:
         commit.show()
 
     fire.Fire(show)
+
+
+@ctxl.contextmanager
+def set_short_sha_size(size: int):
+    """
+    Set the size of short sha.
+
+    Args:
+        size: The length of the short sha.
+    """
+
+    global _SHORT_SHA_LEN
+
+    if size <= 0 or size > _SHA_LEN:
+        raise ValueError(f"The inequality 0 < {size=} < {_SHA_LEN} should be upheld.")
+
+    old_val = _SHORT_SHA_LEN
+
+    try:
+        _SHORT_SHA_LEN = size
+        yield
+    finally:
+        _SHORT_SHA_LEN = old_val

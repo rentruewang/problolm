@@ -10,7 +10,7 @@ from typing import Protocol
 
 from git import Repo
 
-__all__ = ["repo"]
+__all__ = ["repo", "set_global_repo", "global_repo"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,12 +20,30 @@ def repo(folder: str | Path = "."):
     Find the git repo that the repository is located.
     """
 
+    LOGGER.info("Lookup up `%s`'s parents to find the git repository.", folder)
+
     for path in _yield_parents_until_root(folder=folder):
         LOGGER.debug("Visiting %s", path)
         if (path / ".git").exists():
+            LOGGER.info("Git repository found: %s", path)
             return Repo(path)
 
     raise FileNotFoundError("Cannot find git directory from")
+
+
+def global_repo() -> Repo:
+    if REPO is not None:
+        return REPO
+
+    raise RuntimeError("You must call `set_global_repo` first!")
+
+
+def set_global_repo(path: str | Path) -> None:
+    "Set the global default repo to the path."
+
+    global REPO
+
+    REPO = repo(path)
 
 
 def _yield_parents_until_root(folder: str | Path):
@@ -54,3 +72,7 @@ if __name__ == "__main__":
 
     args = parse_args()
     print(repo(args.path))
+
+
+REPO: Repo = repo(".")
+"The global default repo."
