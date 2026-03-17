@@ -7,10 +7,11 @@ import typing
 from collections.abc import Generator
 from typing import Any
 
+from .commits import Commit
+
 if typing.TYPE_CHECKING:
     from git import Diff as _Diff
 
-    from .commits import Commit
 
 __all__ = ["CommitDiff"]
 
@@ -42,8 +43,9 @@ class Delta:
 
 @dcls.dataclass(frozen=True)
 class CommitDiff:
-    newer: "Commit"
-    older: "Commit"
+    newer: str
+    older: str
+    repo: str = "."
 
     def __iter__(self) -> Generator[Delta]:
         for delta in self._git:
@@ -51,7 +53,12 @@ class CommitDiff:
 
     @property
     def _git(self):
-        return self.newer._git.diff(self.older._git, create_patch=True)
+        return (
+            Commit(self.newer).git().diff(Commit(self.older).git(), create_patch=True)
+        )
+
+    def _newer_commit(self):
+        return Commit(sha=self.newer, repo=self.repo)
 
 
 def _decode(item: Any) -> str:

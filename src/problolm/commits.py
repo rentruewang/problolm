@@ -2,8 +2,6 @@
 
 "The commits class."
 
-import dataclasses as dcls
-import functools
 import logging
 from enum import StrEnum
 from enum import auto as Auto
@@ -13,9 +11,8 @@ import fire
 import rich
 
 from . import repos
-from .diffs import CommitDiff
 
-__all__ = ["Commit"]
+__all__ = ["Commit", "CommitType"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,50 +23,62 @@ class CommitType(StrEnum):
     MERGE = Auto()
 
 
-@dcls.dataclass(frozen=True)
-class _RepoBase:
-    repo = "."
-    "The path for the repo"
-
-    @functools.cached_property
-    def _repo(self):
-        return repos.repo(self.repo)
-
-
-@dcls.dataclass(frozen=True)
-class _CommitBase:
-
-    sha: str
-    "The sha of the commit."
-
-
-@dcls.dataclass(frozen=True)
-class Commit(_CommitBase, _RepoBase):
+class Commit:
     "The object for the commits."
 
-    def __post_init__(self):
-        assert self._git.hexsha == self.sha
+    __match_args__ = ("sha",)
 
-    def __sub__(self, other: Commit):
-        return CommitDiff(newer=self, older=other)
+    def __init__(self, sha: str, repo: str = "."):
+        self._sha = sha
+        "The sha of the commit."
 
-    def __rsub__(self, other: Commit):
-        return other - self
+        self._repo = repo
+        "The repository."
 
-    @functools.cached_property
-    def _git(self):
-        return self._repo.commit(self.sha)
+    def __sub__(self, other: str | Self):
+        from .diffs import CommitDiff
+
+        match other:
+            # Is a sha.
+            case str():
+                return CommitDiff(self.sha, older=other, repo=self._repo)
+            # Must be in the same repo.
+            case Commit(sha=sha) if self._repo == other._repo:
+                return CommitDiff(newer=self.sha, older=sha)
+
+        raise ValueError(f"{other!r}")
+
+    def __rsub__(self, other: object):
+        match other:
+            case str():
+                return Commit(other) - self
+
+        raise NotImplementedError(type(other))
+
+    @property
+    def git_repo(self):
+        return repos.repo(self._repo)
+
+    def git(self):
+        commit = self.git_repo.commit(self.sha)
+        assert commit.hexsha == self._sha
+        return commit
 
     @property
     def parents(self) -> list[Self]:
-        return [type(self)(p.hexsha) for p in self._git.parents]
+        return [type(self)(sha=p.hexsha, repo=self._repo) for p in self.git().parents]
 
     @property
     def parent(self) -> Self:
         if self.type != CommitType.LINEAR:
             raise ValueError(f"{self.type} should not be a merge commit.")
 
-        return self.parents[0]
+        parent, *_ = self.parents
+        return parent
+
+    @property
+    def sha(self) -> str:
+        return self._sha
 
     @property
     def diff(self):
@@ -83,7 +92,7 @@ class Commit(_CommitBase, _RepoBase):
             rich.print(diff)
 
     def _before_diff(self):
-        commit = self._git
+        commit = self.git()
         sb: list[str] = []
         sb.append(f"")
         sb.append(f"Author: {commit.author.name} <{commit.author.email}>")
@@ -99,24 +108,13 @@ class Commit(_CommitBase, _RepoBase):
 
     @property
     def type(self) -> CommitType:
-        match len(self._git.parents):
+        match len(self.parents):
             case 0:
                 return CommitType.ROOT
             case 1:
                 return CommitType.LINEAR
             case _:
                 return CommitType.MERGE
-
-
-@dcls.dataclass(frozen=True)
-class _CommitRangeBase:
-    sha_start: str
-    sha_end: str
-
-
-@dcls.dataclass(frozen=True)
-class CommitRange(_CommitRangeBase, _RepoBase):
-    pass
 
 
 def head_commit() -> Commit:
