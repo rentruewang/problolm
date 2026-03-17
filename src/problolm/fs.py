@@ -46,7 +46,7 @@ class Folder(TrieNode):
         self.items[key] = new_node
         return new_node
 
-    def add_file(self, key: str, lines: list[str]) -> File:
+    def add_file(self, key: str, lines: bytes) -> File:
         new_node = File(path=key, data=lines)
         self.items[key] = new_node
         return new_node
