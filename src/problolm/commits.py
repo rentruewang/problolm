@@ -2,6 +2,7 @@
 
 "The commits class."
 
+import contextlib as ctxl
 import logging
 from enum import StrEnum
 from enum import auto as Auto
@@ -12,7 +13,7 @@ import rich
 
 from . import repos
 
-__all__ = ["Commit", "CommitType"]
+__all__ = ["Commit", "CommitType", "short_sha_chars"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,6 +22,29 @@ class CommitType(StrEnum):
     ROOT = Auto()
     LINEAR = Auto()
     MERGE = Auto()
+
+
+_SHORT_SHA_LEN: int = 7
+"The number of short SHA characters. Default to 7 (same as git)."
+
+_SHA_LEN = 40
+"The length of SHA."
+
+
+@ctxl.contextmanager
+def short_sha_chars(value: int):
+    global _SHORT_SHA_LEN
+
+    if value <= 0 or value > _SHA_LEN:
+        raise ValueError(f"The inequality 0 < {value=} < {_SHA_LEN} should be upheld.")
+
+    old_val = _SHORT_SHA_LEN
+
+    try:
+        _SHORT_SHA_LEN = value
+        yield
+    finally:
+        _SHORT_SHA_LEN = old_val
 
 
 class Commit:
@@ -32,10 +56,10 @@ class Commit:
         self._repo = repo
         "The repository."
 
-        self._sha = self.git_repo.commit(sha).hexsha
+        self._long_sha = self.git_repo().commit(sha).hexsha
         "The sha of the commit."
 
-        assert len(self._sha) == 40
+        assert len(self._long_sha) == 40
 
     def __repr__(self) -> str:
         return f"Commit({self!s})"
@@ -54,26 +78,21 @@ class Commit:
             case Commit(sha=sha) if self._repo == other._repo:
                 return CommitDiff(newer=self.sha, older=sha)
 
-        raise ValueError(f"{other!r}")
+        raise ValueError(f"{self=!r} incompatible with {other=!r}")
 
-    def __rsub__(self, other: object):
+    def __rsub__(self, other: str):
         match other:
             case str():
                 return Commit(other) - self
 
         raise NotImplementedError(type(other))
 
-    @property
-    def short_sha(self):
-        return self.sha[:7]
-
-    @property
     def git_repo(self):
         return repos.repo(self._repo)
 
     def git(self):
-        commit = self.git_repo.commit(self.sha)
-        assert commit.hexsha == self._sha
+        commit = self.git_repo().commit(self.sha)
+        assert commit.hexsha == self._long_sha
         return commit
 
     @property
@@ -90,7 +109,15 @@ class Commit:
 
     @property
     def sha(self) -> str:
-        return self._sha
+        return self._long_sha
+
+    @property
+    def long_sha(self) -> str:
+        return self._long_sha
+
+    @property
+    def short_sha(self) -> str:
+        return self.sha[:_SHORT_SHA_LEN]
 
     @property
     def diff(self):
