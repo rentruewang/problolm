@@ -2,3 +2,4 @@
 
 from .commits import *
 from .diffs import *
+from .repos import *

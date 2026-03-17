@@ -20,23 +20,22 @@ def repo(folder: str | Path = "."):
     Find the git repo that the repository is located.
     """
 
+    LOGGER.info("Lookup up `%s`'s parents to find the git repository.", folder)
+
     for path in _yield_parents_until_root(folder=folder):
         LOGGER.debug("Visiting %s", path)
         if (path / ".git").exists():
+            LOGGER.info("Git repository found: %s", path)
             return Repo(path)
 
     raise FileNotFoundError("Cannot find git directory from")
-
-
-REPO: Repo | None = None
-"The global default repo."
 
 
 def global_repo() -> Repo:
     if REPO is not None:
         return REPO
 
-    raise RuntimeError("You must call `set_default_repo` first!")
+    raise RuntimeError("You must call `set_global_repo` first!")
 
 
 def set_global_repo(path: str | Path) -> None:
@@ -73,3 +72,7 @@ if __name__ == "__main__":
 
     args = parse_args()
     print(repo(args.path))
+
+
+REPO: Repo = repo(".")
+"The global default repo."

@@ -4,7 +4,6 @@
 
 import dataclasses as dcls
 import typing
-from collections.abc import Generator
 from typing import Any
 
 from .commits import Commit
@@ -27,10 +26,23 @@ class Delta:
     def __rich__(self) -> str:
         return self._as_string(color=True)
 
+    @property
+    def original_path(self):
+        return self.diff.a_path
+
+    @property
+    def updated_path(self):
+        return self.diff.b_path
+
     def _as_string(self, color: bool) -> str:
         sb = []
-        sb.append(f"--- {self.diff.a_path}")
-        sb.append(f"+++ {self.diff.b_path}")
+
+        if self.original_path:
+            sb.append(f"--- {self.original_path}")
+
+        if self.updated_path:
+            sb.append(f"+++ {self.updated_path}")
+
         sb.extend(self._maybe_color_line_diffs(color=color))
         return "\n".join(sb)
 
@@ -56,10 +68,6 @@ class CommitDiff:
     The RHS of the ``-`` equation.
     """
 
-    def __iter__(self) -> Generator[Delta]:
-        for delta in self.git:
-            yield Delta(delta)
-
     def __str__(self):
         newer = Commit(self.newer)
         older = Commit(self.older)
@@ -68,7 +76,14 @@ class CommitDiff:
     def __repr__(self):
         newer = Commit(self.newer)
         older = Commit(self.older)
-        return f"GitDiff({older!r}..{newer!r})"
+        num_changes = len(self.git)
+        return f"CommitDiff[{num_changes}]({older!r}..{newer!r})"
+
+    def __len__(self) -> int:
+        return len(self.git)
+
+    def __getitem__(self, idx: int) -> Delta:
+        return Delta(self.git[idx])
 
     @property
     def git(self):

@@ -13,7 +13,7 @@ import rich
 from . import repos, shas
 from .shas import Sha, ShaLike
 
-__all__ = ["Commit", "CommitType", "short_sha_chars"]
+__all__ = ["Commit", "CommitType"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class Commit:
         LOGGER.debug("Parsing commit hash: %s", self.sha)
 
         rich.print(self._before_diff())
-        for diff in self.diff:
+        for diff in self.diff.deltas():
             rich.print(diff)
 
     def _before_diff(self) -> str:
