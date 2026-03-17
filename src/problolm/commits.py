@@ -29,11 +29,13 @@ class Commit:
     __match_args__ = ("sha",)
 
     def __init__(self, sha: str, repo: str = "."):
-        self._sha = sha
-        "The sha of the commit."
-
         self._repo = repo
         "The repository."
+
+        self._sha = self.git_repo.commit(sha).hexsha
+        "The sha of the commit."
+
+        assert len(self._sha) == 40
 
     def __repr__(self) -> str:
         return f"Commit({self!s})"
