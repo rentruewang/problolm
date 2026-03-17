@@ -56,6 +56,9 @@ class Commit(CommitLike):
     def __str__(self) -> str:
         return self.short_sha
 
+    def __repr__(self) -> str:
+        return f"Commit({self!s})"
+
     def __sub__(self, other: str | Self):
         from .diffs import CommitDiff
 
@@ -88,11 +91,13 @@ class Commit(CommitLike):
 
         return NotImplemented
 
-    def __repr__(self):
-        return f"Commit({self!s})"
+    def __lt__(self, sha: object):
+        match sha:
+            case str():
+                return self < Commit(sha)
 
-    def __str__(self):
-        return self.short_sha
+            case Commit():
+                return self in sha.ancestors()
 
     @property
     def git(self):
