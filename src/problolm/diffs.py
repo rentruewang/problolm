@@ -24,7 +24,7 @@ class Delta:
     def __str__(self) -> str:
         return self._as_string(color=False)
 
-    def __rich__(self):
+    def __rich__(self) -> str:
         return self._as_string(color=True)
 
     def _as_string(self, color: bool) -> str:
@@ -47,8 +47,14 @@ class CommitDiff:
     "The commit diff."
 
     newer: Sha
+    """
+    The LHS of the ``-`` equation.
+    """
 
     older: Sha
+    """
+    The RHS of the ``-`` equation.
+    """
 
     def __iter__(self) -> Generator[Delta]:
         for delta in self.git:
