@@ -94,6 +94,11 @@ class Commit:
         assert self == commit.hexsha
         return commit
 
+    def fs(self):
+        from . import fs
+
+        return fs.consume(self.git.tree)
+
     @property
     def parents(self) -> list[Self]:
         return [type(self)(sha=p.hexsha) for p in self.git.parents]
