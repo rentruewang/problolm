@@ -15,6 +15,7 @@ import fire
 import rich
 
 from . import repos
+from git import BadName
 
 if typing.TYPE_CHECKING:
     from .diffs import CommitDiff
@@ -48,8 +49,11 @@ class Commit(CommitLike):
     __match_args__ = ("short_sha",)
 
     def __init__(self, sha: str) -> None:
-        self._long_sha = repos.global_repo().commit(sha).hexsha
-        "The sha of the commit."
+        try:
+            self._long_sha = repos.global_repo().commit(sha).hexsha
+            "The sha of the commit."
+        except BadName as bn:
+            raise ValueError from bn
 
         assert len(self._long_sha) == _SHA_LEN
 
@@ -119,6 +123,10 @@ class Commit(CommitLike):
         yield commit
 
     def descendant_of(self, other: str | Commit) -> bool:
+        """
+        If ``self`` is descendant of ``other``.
+        """
+
         for commit in self.ancestors():
             if commit == other:
                 return True
@@ -126,9 +134,16 @@ class Commit(CommitLike):
         return False
 
     def ancestor_of(self, other: str | Commit) -> bool:
+        """
+        If ``self`` is ancestor of ``other``.
+        """
+
         other = Commit(other) if isinstance(other, str) else other
 
         return other.descendant_of(self)
+
+    def same_lineage(self, other: str | Commit) -> bool:
+        return self.descendant_of(other) or self.ancestor_of(other)
 
     @property
     def is_root(self) -> bool:
@@ -192,6 +207,15 @@ class CommitRange(CommitLike):
 
         self._until = Commit(until)
         "The end commit. Inclusive."
+
+        if not self.until.same_lineage(self.begin):
+            raise ValueError("Unrelated history: {self!s}")
+
+    def __repr__(self) -> str:
+        return f"CommitRange({self!s})"
+
+    def __str__(self) -> str:
+        return f"{self.begin!s}..{self.until!s}"
 
     @typing.override
     def diff(self) -> "CommitDiff":
