@@ -88,6 +88,14 @@ class CommitDiff:
     def git(self):
         return self.newer.git.diff(self.older.git, create_patch=True)
 
+    @property
+    def original_paths(self) -> set[str]:
+        return {delta.original_path for delta in self if delta.original_path}
+
+    @property
+    def updated_paths(self) -> set[str]:
+        return {delta.updated_path for delta in self if delta.updated_path}
+
 
 def _decode(item: Any) -> str:
     match item:

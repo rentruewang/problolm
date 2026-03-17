@@ -14,12 +14,10 @@ from typing import Self
 import fire
 import rich
 
-from problolm.diffs import CommitDiff
-
 from . import repos
 
 if typing.TYPE_CHECKING:
-    from .commits import CommitDiff
+    from .diffs import CommitDiff
 
 __all__ = ["CommitLike", "Commit", "CommitRange", "CommitType"]
 
@@ -108,8 +106,11 @@ class Commit(CommitLike):
         parent, *_ = self.parents
         return parent
 
+    def ancestors(self):
+        pass
+
     @typing.override
-    def diff(self) -> CommitDiff:
+    def diff(self) -> "CommitDiff":
         return self - self.parent
 
     def show(self) -> None:
@@ -168,7 +169,7 @@ class CommitRange(CommitLike):
         "The end commit. Inclusive."
 
     @typing.override
-    def diff(self) -> CommitDiff:
+    def diff(self) -> "CommitDiff":
         return self.until - self.begin
 
     @property
