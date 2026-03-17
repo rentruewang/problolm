@@ -142,7 +142,7 @@ class Commit:
     def is_root(self) -> bool:
         return self.type == CommitType.ROOT
 
-    def diff(self) -> "CommitDiff":
+    def diff(self) -> CommitDiff:
         return self - self.parent
 
     def show(self) -> None:
