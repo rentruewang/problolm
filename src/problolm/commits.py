@@ -2,25 +2,23 @@
 
 "The commits class."
 
-import abc
 import contextlib as ctxl
 import logging
 import typing
-from abc import ABC
 from enum import StrEnum
 from enum import auto as Auto
 from typing import Self
 
 import fire
 import rich
+from git import BadName
 
 from . import repos
-from git import BadName
 
 if typing.TYPE_CHECKING:
     from .diffs import CommitDiff
 
-__all__ = ["CommitLike", "Commit", "CommitRange", "CommitType"]
+__all__ = ["Commit", "CommitType"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,12 +36,7 @@ class CommitType(StrEnum):
     MERGE = Auto()
 
 
-class CommitLike(ABC):
-    @abc.abstractmethod
-    def diff(self) -> "CommitDiff": ...
-
-
-class Commit(CommitLike):
+class Commit:
     "The object for the commits."
 
     __match_args__ = ("short_sha",)
@@ -149,7 +142,6 @@ class Commit(CommitLike):
     def is_root(self) -> bool:
         return self.type == CommitType.ROOT
 
-    @typing.override
     def diff(self) -> "CommitDiff":
         return self - self.parent
 
@@ -196,38 +188,6 @@ class Commit(CommitLike):
     @staticmethod
     def set_short_size(size: int):
         return set_short_sha_size(size)
-
-
-class CommitRange(CommitLike):
-    "The commit range."
-
-    def __init__(self, begin: str, until: str):
-        self._begin = Commit(begin)
-        "The start commit. Exclusive."
-
-        self._until = Commit(until)
-        "The end commit. Inclusive."
-
-        if not self.until.same_lineage(self.begin):
-            raise ValueError("Unrelated history: {self!s}")
-
-    def __repr__(self) -> str:
-        return f"CommitRange({self!s})"
-
-    def __str__(self) -> str:
-        return f"{self.begin!s}..{self.until!s}"
-
-    @typing.override
-    def diff(self) -> "CommitDiff":
-        return self.until - self.begin
-
-    @property
-    def begin(self) -> Commit:
-        return self._begin
-
-    @property
-    def until(self) -> Commit:
-        return self._until
 
 
 def head_commit() -> Commit:

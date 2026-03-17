@@ -96,6 +96,14 @@ class CommitDiff:
     def updated_paths(self) -> set[str]:
         return {delta.updated_path for delta in self if delta.updated_path}
 
+    @property
+    def is_linear(self):
+        """
+        Return if the begin..end commits are linear.
+        """
+
+        return self.newer.same_lineage(self.older)
+
 
 def _decode(item: Any) -> str:
     match item:
