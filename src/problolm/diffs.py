@@ -51,6 +51,16 @@ class CommitDiff:
         for delta in self._git:
             yield Delta(delta)
 
+    def __str__(self):
+        newer = Commit(self.newer, repo=self.repo)
+        older = Commit(self.older, repo=self.repo)
+        return f"{older}..{newer}"
+
+    def __repr__(self):
+        newer = Commit(self.newer, repo=self.repo)
+        older = Commit(self.older, repo=self.repo)
+        return f"GitDiff({older!r}..{newer!r})"
+
     @property
     def _git(self):
         return (

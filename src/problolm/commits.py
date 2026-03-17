@@ -35,6 +35,12 @@ class Commit:
         self._repo = repo
         "The repository."
 
+    def __repr__(self) -> str:
+        return f"Commit({self!s})"
+
+    def __str__(self) -> str:
+        return self.short_sha
+
     def __sub__(self, other: str | Self):
         from .diffs import CommitDiff
 
@@ -54,6 +60,10 @@ class Commit:
                 return Commit(other) - self
 
         raise NotImplementedError(type(other))
+
+    @property
+    def short_sha(self):
+        return self.sha[:7]
 
     @property
     def git_repo(self):
