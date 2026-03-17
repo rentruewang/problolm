@@ -88,6 +88,12 @@ class Commit(CommitLike):
 
         return NotImplemented
 
+    def __repr__(self):
+        return f"Commit({self!s})"
+
+    def __str__(self):
+        return self.short_sha
+
     @property
     def git(self):
         commit = repos.global_repo().commit(str(self.sha))
@@ -103,11 +109,21 @@ class Commit(CommitLike):
         if self.type != CommitType.LINEAR:
             raise ValueError(f"{self.type} should not be a merge commit.")
 
-        parent, *_ = self.parents
+        [parent] = self.parents
         return parent
 
     def ancestors(self):
-        pass
+        commit = self
+
+        while not commit.is_root:
+            yield commit
+            commit = commit.parent
+
+        yield commit
+
+    @property
+    def is_root(self) -> bool:
+        return self.type == CommitType.ROOT
 
     @typing.override
     def diff(self) -> "CommitDiff":
