@@ -6,7 +6,7 @@ import abc
 import dataclasses as dcls
 import typing
 from abc import ABC
-from typing import Self, NamedTuple
+from typing import NamedTuple, Self
 
 from git import Blob, Submodule, Tree
 from rich.tree import Tree as RichTree
