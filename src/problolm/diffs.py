@@ -17,7 +17,7 @@ __all__ = ["CommitDiff"]
 
 @dcls.dataclass(frozen=True)
 class Delta:
-    diff: "_Diff"
+    diff: _Diff
 
     def __str__(self) -> str:
         return self._as_string(color=False)

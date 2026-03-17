@@ -38,7 +38,7 @@ class GitHubRepo:
         return self.url
 
     @typing.no_type_check
-    def pr(self, number: int, /) -> "GitHubPr":
+    def pr(self, number: int, /) -> GitHubPr:
         return GitHubPr(
             repo=self,
             number=number,
