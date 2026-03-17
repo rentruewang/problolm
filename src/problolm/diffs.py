@@ -8,6 +8,7 @@ from collections.abc import Generator
 from typing import Any
 
 from .commits import Commit
+from .shas import Sha
 
 if typing.TYPE_CHECKING:
     from git import Diff as _Diff
@@ -43,32 +44,30 @@ class Delta:
 
 @dcls.dataclass(frozen=True)
 class CommitDiff:
-    newer: str
-    older: str
-    repo: str = "."
+    "The commit diff."
+
+    newer: Sha
+
+    older: Sha
 
     def __iter__(self) -> Generator[Delta]:
-        for delta in self._git:
+        for delta in self.git:
             yield Delta(delta)
 
     def __str__(self):
-        newer = Commit(self.newer, repo=self.repo)
-        older = Commit(self.older, repo=self.repo)
+        newer = Commit(self.newer)
+        older = Commit(self.older)
         return f"{older}..{newer}"
 
     def __repr__(self):
-        newer = Commit(self.newer, repo=self.repo)
-        older = Commit(self.older, repo=self.repo)
+        newer = Commit(self.newer)
+        older = Commit(self.older)
         return f"GitDiff({older!r}..{newer!r})"
 
     @property
-    def _git(self):
-        return (
-            Commit(self.newer).git().diff(Commit(self.older).git(), create_patch=True)
-        )
-
-    def _newer_commit(self):
-        return Commit(sha=self.newer, repo=self.repo)
+    def git(self):
+        newer = Commit(self.newer)
+        return newer.git.diff(str(self.older), create_patch=True)
 
 
 def _decode(item: Any) -> str:

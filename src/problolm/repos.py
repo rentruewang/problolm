@@ -10,7 +10,7 @@ from typing import Protocol
 
 from git import Repo
 
-__all__ = ["repo"]
+__all__ = ["repo", "set_global_repo", "global_repo"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +26,25 @@ def repo(folder: str | Path = "."):
             return Repo(path)
 
     raise FileNotFoundError("Cannot find git directory from")
+
+
+REPO: Repo | None = None
+"The global default repo."
+
+
+def global_repo() -> Repo:
+    if REPO is not None:
+        return REPO
+
+    raise RuntimeError("You must call `set_default_repo` first!")
+
+
+def set_global_repo(path: str | Path) -> None:
+    "Set the global default repo to the path."
+
+    global REPO
+
+    REPO = repo(path)
 
 
 def _yield_parents_until_root(folder: str | Path):

@@ -2,7 +2,6 @@
 
 "The commits class."
 
-import contextlib as ctxl
 import logging
 from enum import StrEnum
 from enum import auto as Auto
@@ -11,7 +10,8 @@ from typing import Self
 import fire
 import rich
 
-from . import repos
+from . import repos, shas
+from .shas import Sha, ShaLike
 
 __all__ = ["Commit", "CommitType", "short_sha_chars"]
 
@@ -24,48 +24,16 @@ class CommitType(StrEnum):
     MERGE = Auto()
 
 
-_SHORT_SHA_LEN: int = 7
-"The number of short SHA characters. Default to 7 (same as git)."
-
-_SHA_LEN = 40
-"The length of SHA."
-
-
-@ctxl.contextmanager
-def short_sha_chars(value: int):
-    global _SHORT_SHA_LEN
-
-    if value <= 0 or value > _SHA_LEN:
-        raise ValueError(f"The inequality 0 < {value=} < {_SHA_LEN} should be upheld.")
-
-    old_val = _SHORT_SHA_LEN
-
-    try:
-        _SHORT_SHA_LEN = value
-        yield
-    finally:
-        _SHORT_SHA_LEN = old_val
-
-
 class Commit:
     "The object for the commits."
 
     __match_args__ = ("sha",)
 
-    def __init__(self, sha: str, repo: str = "."):
-        self._repo = repo
-        "The repository."
-
-        self._long_sha = self.git_repo().commit(sha).hexsha
-        "The sha of the commit."
-
-        assert len(self._long_sha) == 40
+    def __init__(self, sha: ShaLike):
+        self._sha = shas.sha(sha)
 
     def __repr__(self) -> str:
-        return f"Commit({self!s})"
-
-    def __str__(self) -> str:
-        return self.short_sha
+        return f"Commit({self._sha!s})"
 
     def __sub__(self, other: str | Self):
         from .diffs import CommitDiff
@@ -73,9 +41,10 @@ class Commit:
         match other:
             # Is a sha.
             case str():
-                return CommitDiff(self.sha, older=other, repo=self._repo)
+                return CommitDiff(self.sha, older=shas.sha(other))
+
             # Must be in the same repo.
-            case Commit(sha=sha) if self._repo == other._repo:
+            case Commit(sha=sha):
                 return CommitDiff(newer=self.sha, older=sha)
 
         raise ValueError(f"{self=!r} incompatible with {other=!r}")
@@ -87,17 +56,19 @@ class Commit:
 
         raise NotImplementedError(type(other))
 
-    def git_repo(self):
-        return repos.repo(self._repo)
+    @property
+    def sha(self) -> Sha:
+        return self._sha
 
+    @property
     def git(self):
-        commit = self.git_repo().commit(self.sha)
-        assert commit.hexsha == self._long_sha
+        commit = repos.global_repo().commit(str(self.sha))
+        assert self._sha == commit.hexsha
         return commit
 
     @property
     def parents(self) -> list[Self]:
-        return [type(self)(sha=p.hexsha, repo=self._repo) for p in self.git().parents]
+        return [type(self)(sha=p.hexsha) for p in self.git.parents]
 
     @property
     def parent(self) -> Self:
@@ -106,18 +77,6 @@ class Commit:
 
         parent, *_ = self.parents
         return parent
-
-    @property
-    def sha(self) -> str:
-        return self._long_sha
-
-    @property
-    def long_sha(self) -> str:
-        return self._long_sha
-
-    @property
-    def short_sha(self) -> str:
-        return self.sha[:_SHORT_SHA_LEN]
 
     @property
     def diff(self):
@@ -130,8 +89,8 @@ class Commit:
         for diff in self.diff:
             rich.print(diff)
 
-    def _before_diff(self):
-        commit = self.git()
+    def _before_diff(self) -> str:
+        commit = self.git
         sb: list[str] = []
         sb.append(f"")
         sb.append(f"Author: {commit.author.name} <{commit.author.email}>")
@@ -158,7 +117,7 @@ class Commit:
 
 def head_commit() -> Commit:
     "Get the commit at the HEAD."
-    return Commit(repos.repo().head.commit.hexsha)
+    return Commit(repos.global_repo().head.commit.hexsha)
 
 
 def git_show_cmd() -> None:
