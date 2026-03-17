@@ -2,7 +2,11 @@
 
 "The commits class."
 
+import abc
+import contextlib as ctxl
 import logging
+import typing
+from abc import ABC
 from enum import StrEnum
 from enum import auto as Auto
 from typing import Self
@@ -10,12 +14,23 @@ from typing import Self
 import fire
 import rich
 
-from . import repos, shas
-from .shas import Sha, ShaLike
+from problolm.diffs import CommitDiff
 
-__all__ = ["Commit", "CommitType"]
+from . import repos
+
+if typing.TYPE_CHECKING:
+    from .commits import CommitDiff
+
+__all__ = ["CommitLike", "Commit", "CommitRange", "CommitType"]
 
 LOGGER = logging.getLogger(__name__)
+
+
+_SHORT_SHA_LEN: int = 7
+"The number of short SHA characters. Default to 7 (same as git)."
+
+_SHA_LEN = 40
+"The length of SHA."
 
 
 class CommitType(StrEnum):
@@ -24,16 +39,24 @@ class CommitType(StrEnum):
     MERGE = Auto()
 
 
-class Commit:
+class CommitLike(ABC):
+    @abc.abstractmethod
+    def diff(self) -> "CommitDiff": ...
+
+
+class Commit(CommitLike):
     "The object for the commits."
 
-    __match_args__ = ("sha",)
+    __match_args__ = ("short_sha",)
 
-    def __init__(self, sha: ShaLike):
-        self._sha = shas.sha(sha)
+    def __init__(self, sha: str) -> None:
+        self._long_sha = repos.global_repo().commit(sha).hexsha
+        "The sha of the commit."
 
-    def __repr__(self) -> str:
-        return f"Commit({self._sha!s})"
+        assert len(self._long_sha) == _SHA_LEN
+
+    def __str__(self) -> str:
+        return self.short_sha
 
     def __sub__(self, other: str | Self):
         from .diffs import CommitDiff
@@ -41,11 +64,11 @@ class Commit:
         match other:
             # Is a sha.
             case str():
-                return CommitDiff(self.sha, older=shas.sha(other))
+                return CommitDiff(newer=self, older=Commit(other))
 
             # Must be in the same repo.
-            case Commit(sha=sha):
-                return CommitDiff(newer=self.sha, older=sha)
+            case Commit():
+                return CommitDiff(newer=self, older=other)
 
         raise ValueError(f"{self=!r} incompatible with {other=!r}")
 
@@ -56,14 +79,21 @@ class Commit:
 
         raise NotImplementedError(type(other))
 
-    @property
-    def sha(self) -> Sha:
-        return self._sha
+    def __eq__(self, sha: object) -> bool:
+        match sha:
+            # Check if it's prefix.
+            case str():
+                return self._long_sha.startswith(sha)
+
+            case Commit():
+                return self._long_sha == sha._long_sha
+
+        return NotImplemented
 
     @property
     def git(self):
         commit = repos.global_repo().commit(str(self.sha))
-        assert self._sha == commit.hexsha
+        assert self == commit.hexsha
         return commit
 
     @property
@@ -78,16 +108,16 @@ class Commit:
         parent, *_ = self.parents
         return parent
 
-    @property
-    def diff(self):
+    @typing.override
+    def diff(self) -> CommitDiff:
         return self - self.parent
 
-    def show(self):
-        LOGGER.debug("Parsing commit hash: %s", self.sha)
+    def show(self) -> None:
+        LOGGER.debug("Parsing commit hash: %s", self)
 
         rich.print(self._before_diff())
-        for diff in self.diff.deltas():
-            rich.print(diff)
+        for delta in self.diff():
+            rich.print(delta)
 
     def _before_diff(self) -> str:
         commit = self.git
@@ -114,6 +144,41 @@ class Commit:
             case _:
                 return CommitType.MERGE
 
+    @property
+    def sha(self) -> str:
+        return self._long_sha
+
+    @property
+    def short_sha(self) -> str:
+        return self._long_sha[:_SHORT_SHA_LEN]
+
+    @staticmethod
+    def set_short_size(size: int):
+        return set_short_sha_size(size)
+
+
+class CommitRange(CommitLike):
+    "The commit range."
+
+    def __init__(self, begin: str, until: str):
+        self._begin = Commit(begin)
+        "The start commit. Exclusive."
+
+        self._until = Commit(until)
+        "The end commit. Inclusive."
+
+    @typing.override
+    def diff(self) -> CommitDiff:
+        return self.until - self.begin
+
+    @property
+    def begin(self) -> Commit:
+        return self._begin
+
+    @property
+    def until(self) -> Commit:
+        return self._until
+
 
 def head_commit() -> Commit:
     "Get the commit at the HEAD."
@@ -128,3 +193,26 @@ def git_show_cmd() -> None:
         commit.show()
 
     fire.Fire(show)
+
+
+@ctxl.contextmanager
+def set_short_sha_size(size: int):
+    """
+    Set the size of short sha.
+
+    Args:
+        size: The length of the short sha.
+    """
+
+    global _SHORT_SHA_LEN
+
+    if size <= 0 or size > _SHA_LEN:
+        raise ValueError(f"The inequality 0 < {size=} < {_SHA_LEN} should be upheld.")
+
+    old_val = _SHORT_SHA_LEN
+
+    try:
+        _SHORT_SHA_LEN = size
+        yield
+    finally:
+        _SHORT_SHA_LEN = old_val

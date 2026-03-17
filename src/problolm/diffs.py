@@ -7,7 +7,6 @@ import typing
 from typing import Any
 
 from .commits import Commit
-from .shas import Sha
 
 if typing.TYPE_CHECKING:
     from git import Diff as _Diff
@@ -58,26 +57,22 @@ class Delta:
 class CommitDiff:
     "The commit diff."
 
-    newer: Sha
+    newer: Commit
     """
-    The LHS of the ``-`` equation.
-    """
-
-    older: Sha
-    """
-    The RHS of the ``-`` equation.
+    The LHS of the ``-`` equation. Inclusive.
     """
 
-    def __str__(self):
-        newer = Commit(self.newer)
-        older = Commit(self.older)
-        return f"{older}..{newer}"
+    older: Commit
+    """
+    The RHS of the ``-`` equation. Exclusive.
+    """
 
-    def __repr__(self):
-        newer = Commit(self.newer)
-        older = Commit(self.older)
+    def __str__(self) -> str:
+        return f"{self.older!s}..{self.newer!s}"
+
+    def __repr__(self) -> str:
         num_changes = len(self.git)
-        return f"CommitDiff[{num_changes}]({older!r}..{newer!r})"
+        return f"CommitDiff[{num_changes}]({self.older!r}..{self.newer!r})"
 
     def __len__(self) -> int:
         return len(self.git)
@@ -85,10 +80,13 @@ class CommitDiff:
     def __getitem__(self, idx: int) -> Delta:
         return Delta(self.git[idx])
 
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self[i]
+
     @property
     def git(self):
-        newer = Commit(self.newer)
-        return newer.git.diff(str(self.older), create_patch=True)
+        return self.newer.git.diff(self.older.git, create_patch=True)
 
 
 def _decode(item: Any) -> str:
