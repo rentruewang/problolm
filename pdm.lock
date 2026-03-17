@@ -5,10 +5,10 @@
 groups = ["default", "dev", "jupyter", "pytest"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:59a05026194f4e756422a681799284df84989c9164e57b89849179c244dd5f87"
+content_hash = "sha256:8da481c36c39ab8e8ea1d18ead4c50dc77071677b170e5196386b43fc24dd0a1"
 
 [[metadata.targets]]
-requires_python = ">=3.13"
+requires_python = ">=3.14,<3.15"
 
 [[package]]
 name = "annotated-doc"
