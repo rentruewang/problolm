@@ -34,6 +34,9 @@ class Folder(TrieNode):
 
     items: dict[str, TrieNode] = dcls.field(default_factory=dict)
 
+    def __str__(self):
+        return str(self.__rich__())
+
     def __rich__(self):
 
         def add_tree(node: TrieNode, tree: RichTree):
@@ -47,20 +50,45 @@ class Folder(TrieNode):
         return tree
 
     def __truediv__(self, key: str) -> TrieNode:
-        return self.__go_one_level_below(key)
+        paths = key.split("/")
 
-    def __go_one_level_below(self):
-        return self.items[key]
+        node = self
+
+        for path in paths:
+            if not isinstance(node, Folder):
+                raise ValueError(f"Key: {key} is not valid.")
+
+            node = node.__go_one_level_below(path)
+
+        return node
+
+    def __go_one_level_below(self, key: str):
+        try:
+            return self.items[key]
+        except KeyError:
+            raise ValueError(repr(key))
 
     def add_folder(self, key: str) -> Self:
+        """
+        Add a folder to the current folder.
+        """
+
         new_node = type(self)(key)
         self.items[key] = new_node
         return new_node
 
     def add_file(self, key: str, lines: bytes) -> File:
+        """
+        Add a file to the current folder.
+        """
         new_node = File(path=key, data=lines)
         self.items[key] = new_node
         return new_node
+
+    def rm(self, key: str):
+        item = self.items[key]
+        del self.items[key]
+        return item
 
     @typing.override
     def children(self) -> list[TrieNode]:
