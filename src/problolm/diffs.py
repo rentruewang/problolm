@@ -59,12 +59,12 @@ class CommitDiff:
 
     newer: Commit
     """
-    The LHS of the ``-`` equation. Inclusive.
+    The LHS of the `-` equation. Inclusive.
     """
 
     older: Commit
     """
-    The RHS of the ``-`` equation. Exclusive.
+    The RHS of the `-` equation. Exclusive.
     """
 
     def __str__(self) -> str:

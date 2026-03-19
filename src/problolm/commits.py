@@ -3,6 +3,7 @@
 "The commits class."
 
 import contextlib as ctxl
+import functools
 import logging
 import typing
 from enum import StrEnum
@@ -95,6 +96,12 @@ class Commit:
         return commit
 
     def fs(self):
+        "Return the folder structure at the specific commit."
+
+        return self.__fs
+
+    @functools.cached_property
+    def __fs(self):
         from . import fs
 
         return fs.consume(self.git.tree)
@@ -122,7 +129,7 @@ class Commit:
 
     def descendant_of(self, other: str | Commit) -> bool:
         """
-        If ``self`` is descendant of ``other``.
+        If `self` is descendant of `other`.
         """
 
         for commit in self.ancestors():
@@ -133,7 +140,7 @@ class Commit:
 
     def ancestor_of(self, other: str | Commit) -> bool:
         """
-        If ``self`` is ancestor of ``other``.
+        If `self` is ancestor of `other`.
         """
 
         other = Commit(other) if isinstance(other, str) else other
