@@ -168,12 +168,15 @@ class File(TrieNode):
     def __repr__(self) -> str:
         full_path = self.full_path()
 
-        match txt := self.read():
-            case str():
-                lines = txt.count("\n") + 1
-                return f"text({full_path}, lines={lines})"
-            case _:
-                return f"binary({full_path})"
+        if self.is_text:
+            lines = self.read().count("\n") + 1
+            return f"Text({full_path}, lines={lines})"
+        else:
+            return f"Binary({full_path})"
+
+    @property
+    def is_text(self):
+        return self._utf8_content is not None
 
     def read(self) -> str:
         """
