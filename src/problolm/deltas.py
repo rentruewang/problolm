@@ -15,6 +15,8 @@ __all__ = ["Delta"]
 
 @dcls.dataclass(frozen=True)
 class Delta:
+    "Delta is a `git.Diff` wrapper object that exposes the API to `problolm`."
+
     diff: _Diff
 
     def __str__(self) -> str:
