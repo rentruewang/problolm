@@ -41,6 +41,15 @@ class RangeDiff:
         for i in range(len(self)):
             yield self[i]
 
+    def __eq__(self, other: object):
+        match other:
+            case RangeDiff():
+                return self.newer == other.newer and self.older == other.older
+            case Commit():
+                return self.newer == other and self.older == other.parent
+
+        return NotImplemented
+
     @property
     def git(self):
         return self.newer.git.diff(self.older.git, create_patch=True)
