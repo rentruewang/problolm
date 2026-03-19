@@ -20,10 +20,10 @@ class Delta:
     diff: _Diff
 
     def __str__(self) -> str:
-        return self._as_string(color=False)
+        return self._as_string(rich_color=False)
 
     def __rich__(self) -> str:
-        return self._as_string(color=True)
+        return self._as_string(rich_color=True)
 
     @property
     def original_path(self):
@@ -33,7 +33,9 @@ class Delta:
     def updated_path(self):
         return self.diff.b_path
 
-    def _as_string(self, color: bool) -> str:
+    def _as_string(self, rich_color: bool) -> str:
+        "Convert `self` to string. If `rich_color` is given, color using `rich` syntax."
+
         sb = []
 
         if self.original_path:
@@ -42,7 +44,7 @@ class Delta:
         if self.updated_path:
             sb.append(f"+++ {self.updated_path}")
 
-        sb.extend(self._maybe_color_line_diffs(color=color))
+        sb.extend(self._maybe_color_line_diffs(color=rich_color))
         return "\n".join(sb)
 
     def _maybe_color_line_diffs(self, color: bool):
