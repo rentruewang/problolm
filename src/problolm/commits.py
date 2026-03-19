@@ -17,7 +17,7 @@ from git import BadName
 from . import repos
 
 if typing.TYPE_CHECKING:
-    from .diffs import CommitDiff
+    from .ranges import RangeDiff
 
 __all__ = ["Commit", "CommitType"]
 
@@ -58,16 +58,16 @@ class Commit:
         return f"Commit({self!s})"
 
     def __sub__(self, other: str | Self):
-        from .diffs import CommitDiff
+        from .ranges import RangeDiff
 
         match other:
             # Is a sha.
             case str():
-                return CommitDiff(newer=self, older=Commit(other))
+                return RangeDiff(newer=self, older=Commit(other))
 
             # Must be in the same repo.
             case Commit():
-                return CommitDiff(newer=self, older=other)
+                return RangeDiff(newer=self, older=other)
 
         raise ValueError(f"{self=!r} incompatible with {other=!r}")
 
@@ -158,7 +158,7 @@ class Commit:
     def is_root(self) -> bool:
         return self.type == CommitType.ROOT
 
-    def diff(self) -> CommitDiff:
+    def diff(self) -> RangeDiff:
         return self - self.parent
 
     def show(self) -> None:
