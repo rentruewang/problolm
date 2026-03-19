@@ -163,20 +163,23 @@ class Folder(TrieNode):
 
 @dcls.dataclass(frozen=True)
 class File(TrieNode):
+    "The file nodes in the file system tree."
+
     data: bytes
+    "The data stored in an object. Might be decodable to a string."
 
     def __repr__(self) -> str:
         full_path = self.full_path()
 
-        if self.is_text:
+        if self.is_binary:
+            return f"Binary({full_path})"
+        else:
             lines = self.read().count("\n") + 1
             return f"Text({full_path}, lines={lines})"
-        else:
-            return f"Binary({full_path})"
 
     @property
-    def is_text(self):
-        return self._utf8_content is not None
+    def is_binary(self):
+        return self._utf8_content is None
 
     def read(self) -> str:
         """
