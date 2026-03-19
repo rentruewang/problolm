@@ -3,6 +3,7 @@
 "The commits class."
 
 import contextlib as ctxl
+import functools
 import logging
 import typing
 from enum import StrEnum
@@ -16,7 +17,7 @@ from git import BadName
 from . import repos
 
 if typing.TYPE_CHECKING:
-    from .diffs import CommitDiff
+    from .ranges import RangeDiff
 
 __all__ = ["Commit", "CommitType"]
 
@@ -57,16 +58,16 @@ class Commit:
         return f"Commit({self!s})"
 
     def __sub__(self, other: str | Self):
-        from .diffs import CommitDiff
+        from .ranges import RangeDiff
 
         match other:
             # Is a sha.
             case str():
-                return CommitDiff(newer=self, older=Commit(other))
+                return RangeDiff(newer=self, older=Commit(other))
 
             # Must be in the same repo.
             case Commit():
-                return CommitDiff(newer=self, older=other)
+                return RangeDiff(newer=self, older=other)
 
         raise ValueError(f"{self=!r} incompatible with {other=!r}")
 
@@ -88,6 +89,10 @@ class Commit:
 
         return NotImplemented
 
+    def list_files(self):
+        file_system = self.fs()
+        yield from file_system.list_files()
+
     @property
     def git(self):
         commit = repos.global_repo().commit(str(self.sha))
@@ -95,6 +100,12 @@ class Commit:
         return commit
 
     def fs(self):
+        "Return the folder structure at the specific commit."
+
+        return self.__fs
+
+    @functools.cached_property
+    def __fs(self):
         from . import fs
 
         return fs.consume(self.git.tree)
@@ -122,7 +133,7 @@ class Commit:
 
     def descendant_of(self, other: str | Commit) -> bool:
         """
-        If ``self`` is descendant of ``other``.
+        If `self` is descendant of `other`.
         """
 
         for commit in self.ancestors():
@@ -133,7 +144,7 @@ class Commit:
 
     def ancestor_of(self, other: str | Commit) -> bool:
         """
-        If ``self`` is ancestor of ``other``.
+        If `self` is ancestor of `other`.
         """
 
         other = Commit(other) if isinstance(other, str) else other
@@ -147,7 +158,7 @@ class Commit:
     def is_root(self) -> bool:
         return self.type == CommitType.ROOT
 
-    def diff(self) -> CommitDiff:
+    def diff(self) -> RangeDiff:
         return self - self.parent
 
     def show(self) -> None:

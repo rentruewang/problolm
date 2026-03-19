@@ -131,7 +131,7 @@ def github_pull_request(number: int = 0, repo: str = "") -> GitHubPr:
         number:
             The PR number. Must be found on github.
             If not given, this is parsed from `GITHUB_REF` in environment.
-        repo: Passed to ``github_repo``. See documentation there for details.
+        repo: Passed to `github_repo`. See documentation there for details.
 
     Returns:
         A PR object.
@@ -142,8 +142,8 @@ def github_pull_request(number: int = 0, repo: str = "") -> GitHubPr:
 
 
 def _parse_env_pr_num():
-    # If ``github_event()`` is not PR, or raises and error,
-    # re-raise a ``ValueError``.
+    # If `github_event()` is not PR, or raises and error,
+    # re-raise a `ValueError`.
     try:
         if envs.github_event() != "pull_request":
             raise NotImplementedError
