@@ -89,6 +89,10 @@ class Commit:
 
         return NotImplemented
 
+    def list_files(self):
+        file_system = self.fs()
+        yield from file_system.list_files()
+
     @property
     def git(self):
         commit = repos.global_repo().commit(str(self.sha))
