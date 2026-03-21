@@ -124,7 +124,7 @@ class Folder(TrieNode):
         try:
             return self.items[key]
         except KeyError:
-            raise ValueError(repr(key))
+            raise ValueError(f"{self!r} / {key} is not presenet.")
 
     def add_folder(self, key: str) -> Self:
         """
@@ -171,15 +171,17 @@ class File(TrieNode):
     def __repr__(self) -> str:
         full_path = self.full_path()
 
-        if self.is_binary:
+        if self.is_binary():
             return f"Binary({full_path})"
         else:
             lines = self.read().count("\n") + 1
             return f"Text({full_path}, lines={lines})"
 
-    @property
-    def is_binary(self):
+    def is_binary(self) -> bool:
         return self._utf8_content is None
+
+    def is_text(self) -> bool:
+        return not self.is_binary()
 
     def read(self) -> str:
         """

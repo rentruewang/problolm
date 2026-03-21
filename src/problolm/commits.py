@@ -17,7 +17,7 @@ from git import BadName
 from . import repos
 
 if typing.TYPE_CHECKING:
-    from .changes import CommitRange
+    from .ranges import CommitRange
 
 __all__ = ["Commit", "CommitType"]
 
@@ -58,7 +58,7 @@ class Commit:
         return f"Commit({self!s})"
 
     def __sub__(self, other: str | Self):
-        from .changes import CommitRange
+        from .ranges import CommitRange
 
         match other:
             # Is a sha.

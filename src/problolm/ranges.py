@@ -6,7 +6,7 @@ import dataclasses as dcls
 import logging
 
 from .commits import Commit
-from .deltas import GitDelta
+from .deltas import Delta
 
 __all__ = ["CommitRange"]
 
@@ -37,8 +37,14 @@ class CommitRange:
     def __len__(self) -> int:
         return len(self.git)
 
-    def __getitem__(self, idx: int) -> GitDelta:
-        return GitDelta(self.git[idx])
+    def __getitem__(self, idx: int) -> Delta:
+        diff = self.git[idx]
+        return Delta(
+            older=self.older,
+            newer=self.newer,
+            older_path=diff.a_path,
+            newer_path=diff.b_path,
+        )
 
     def __iter__(self):
         for i in range(len(self)):
