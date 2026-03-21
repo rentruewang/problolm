@@ -8,7 +8,6 @@ from typing import Any
 
 if typing.TYPE_CHECKING:
     from git import Diff as _Diff
-    from .commits import Commit
 
 
 __all__ = ["GitDelta"]

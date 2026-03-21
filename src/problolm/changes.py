@@ -3,11 +3,14 @@
 "The diff information."
 
 import dataclasses as dcls
+import logging
 
 from .commits import Commit
 from .deltas import GitDelta
 
 __all__ = ["CommitRange"]
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dcls.dataclass(frozen=True)
