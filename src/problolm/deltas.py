@@ -8,14 +8,15 @@ from typing import Any
 
 if typing.TYPE_CHECKING:
     from git import Diff as _Diff
+    from .commits import Commit
 
 
-__all__ = ["Delta"]
+__all__ = ["GitDelta"]
 
 
 @dcls.dataclass(frozen=True)
-class Delta:
-    "Delta is a `git.Diff` wrapper object that exposes the API to `problolm`."
+class GitDelta:
+    "GitDelta is a `git.Diff` wrapper object that exposes the API to `problolm`."
 
     diff: _Diff
 
@@ -26,11 +27,11 @@ class Delta:
         return self._as_string(rich_color=True)
 
     @property
-    def original_path(self):
+    def older_path(self):
         return self.diff.a_path
 
     @property
-    def updated_path(self):
+    def newer_path(self):
         return self.diff.b_path
 
     def _as_string(self, rich_color: bool) -> str:
@@ -38,11 +39,11 @@ class Delta:
 
         sb = []
 
-        if self.original_path:
-            sb.append(f"--- {self.original_path}")
+        if self.older_path:
+            sb.append(f"--- {self.older_path}")
 
-        if self.updated_path:
-            sb.append(f"+++ {self.updated_path}")
+        if self.newer_path:
+            sb.append(f"+++ {self.newer_path}")
 
         sb.extend(self._maybe_color_line_diffs(color=rich_color))
         return "\n".join(sb)
