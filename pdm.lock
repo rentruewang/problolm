@@ -5,7 +5,7 @@
 groups = ["default", "dev", "jupyter", "pytest"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:d12508e5dfa0fc6441039c4dcb052bdaaba04146ebce4b197e23e068376d1c89"
+content_hash = "sha256:56cd546f7edae632104ad3729209456990cea570a5489845ac237d5956b8990a"
 
 [[metadata.targets]]
 requires_python = ">=3.14,<3.15"
@@ -137,7 +137,7 @@ files = [
 
 [[package]]
 name = "async-lru"
-version = "2.2.0"
+version = "2.3.0"
 requires_python = ">=3.10"
 summary = "Simple LRU cache for asyncio"
 groups = ["jupyter"]
@@ -145,19 +145,19 @@ dependencies = [
     "typing-extensions>=4.0.0; python_version < \"3.11\"",
 ]
 files = [
-    {file = "async_lru-2.2.0-py3-none-any.whl", hash = "sha256:e2c1cf731eba202b59c5feedaef14ffd9d02ad0037fcda64938699f2c380eafe"},
-    {file = "async_lru-2.2.0.tar.gz", hash = "sha256:80abae2a237dbc6c60861d621619af39f0d920aea306de34cb992c879e01370c"},
+    {file = "async_lru-2.3.0-py3-none-any.whl", hash = "sha256:eea27b01841909316f2cc739807acea1c623df2be8c5cfad7583286397bb8315"},
+    {file = "async_lru-2.3.0.tar.gz", hash = "sha256:89bdb258a0140d7313cf8f4031d816a042202faa61d0ab310a0a538baa1c24b6"},
 ]
 
 [[package]]
 name = "attrs"
-version = "25.4.0"
+version = "26.1.0"
 requires_python = ">=3.9"
 summary = "Classes Without Boilerplate"
 groups = ["dev", "jupyter"]
 files = [
-    {file = "attrs-25.4.0-py3-none-any.whl", hash = "sha256:adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373"},
-    {file = "attrs-25.4.0.tar.gz", hash = "sha256:16d5969b87f0859ef33a48b35d55ac1be6e42ae49d5e853b597db70c35c57e11"},
+    {file = "attrs-26.1.0-py3-none-any.whl", hash = "sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"},
+    {file = "attrs-26.1.0.tar.gz", hash = "sha256:d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32"},
 ]
 
 [[package]]
@@ -759,7 +759,7 @@ files = [
 
 [[package]]
 name = "huggingface-hub"
-version = "1.7.1"
+version = "1.7.2"
 requires_python = ">=3.9.0"
 summary = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 groups = ["default"]
@@ -775,8 +775,8 @@ dependencies = [
     "typing-extensions>=4.1.0",
 ]
 files = [
-    {file = "huggingface_hub-1.7.1-py3-none-any.whl", hash = "sha256:38c6cce7419bbde8caac26a45ed22b0cea24152a8961565d70ec21f88752bfaa"},
-    {file = "huggingface_hub-1.7.1.tar.gz", hash = "sha256:be38fe66e9b03c027ad755cb9e4b87ff0303c98acf515b5d579690beb0bf3048"},
+    {file = "huggingface_hub-1.7.2-py3-none-any.whl", hash = "sha256:288f33a0a17b2a73a1359e2a5fd28d1becb2c121748c6173ab8643fb342c850e"},
+    {file = "huggingface_hub-1.7.2.tar.gz", hash = "sha256:7f7e294e9bbb822e025bdb2ada025fa4344d978175a7f78e824d86e35f7ab43b"},
 ]
 
 [[package]]
@@ -970,13 +970,13 @@ files = [
 
 [[package]]
 name = "jsonpointer"
-version = "3.0.0"
-requires_python = ">=3.7"
+version = "3.1.0"
+requires_python = ">=3.10"
 summary = "Identify specific nodes in a JSON document (RFC 6901) "
 groups = ["jupyter"]
 files = [
-    {file = "jsonpointer-3.0.0-py2.py3-none-any.whl", hash = "sha256:13e088adc14fca8b6aa8177c044e12701e6ad4b28ff10e65f2267a90109c9942"},
-    {file = "jsonpointer-3.0.0.tar.gz", hash = "sha256:2b2d729f2091522d61c3b31f82e11870f60b68f43fbc705cb76bf4b832af59ef"},
+    {file = "jsonpointer-3.1.0-py3-none-any.whl", hash = "sha256:f82aa0f745001f169b96473348370b43c3f581446889c41c807bab1db11c8e7b"},
+    {file = "jsonpointer-3.1.0.tar.gz", hash = "sha256:f9b39abd59ba8c1de8a4ff16141605d2a8dacc4dd6cf399672cf237bfe47c211"},
 ]
 
 [[package]]
@@ -1918,46 +1918,46 @@ files = [
 
 [[package]]
 name = "pbs-installer"
-version = "2026.3.10"
+version = "2026.3.20"
 requires_python = ">=3.8"
 summary = "Installer for Python Build Standalone"
 groups = ["dev"]
 files = [
-    {file = "pbs_installer-2026.3.10-py3-none-any.whl", hash = "sha256:cbe0dfea88ed3e02520462ba068c6ff28691ee401d2ca0af8edc9a2f92485a8c"},
-    {file = "pbs_installer-2026.3.10.tar.gz", hash = "sha256:a0a79509de89d6a2b12033b43b2685627b1428d12fc2d706d4ba8b245b85eda0"},
+    {file = "pbs_installer-2026.3.20-py3-none-any.whl", hash = "sha256:09f6363b490176952f2a3f62f673e5380cf3c470bbbf214b2f2027f33c4d5f22"},
+    {file = "pbs_installer-2026.3.20.tar.gz", hash = "sha256:6ba456ca6e0f47d8ce47d4ba8817bc69de8bf3fca819582073ead21a65e0d2a7"},
 ]
 
 [[package]]
 name = "pbs-installer"
-version = "2026.3.10"
+version = "2026.3.20"
 extras = ["all"]
 requires_python = ">=3.8"
 summary = "Installer for Python Build Standalone"
 groups = ["dev"]
 dependencies = [
-    "pbs-installer==2026.3.10",
+    "pbs-installer==2026.3.20",
     "pbs-installer[download,install]",
 ]
 files = [
-    {file = "pbs_installer-2026.3.10-py3-none-any.whl", hash = "sha256:cbe0dfea88ed3e02520462ba068c6ff28691ee401d2ca0af8edc9a2f92485a8c"},
-    {file = "pbs_installer-2026.3.10.tar.gz", hash = "sha256:a0a79509de89d6a2b12033b43b2685627b1428d12fc2d706d4ba8b245b85eda0"},
+    {file = "pbs_installer-2026.3.20-py3-none-any.whl", hash = "sha256:09f6363b490176952f2a3f62f673e5380cf3c470bbbf214b2f2027f33c4d5f22"},
+    {file = "pbs_installer-2026.3.20.tar.gz", hash = "sha256:6ba456ca6e0f47d8ce47d4ba8817bc69de8bf3fca819582073ead21a65e0d2a7"},
 ]
 
 [[package]]
 name = "pbs-installer"
-version = "2026.3.10"
+version = "2026.3.20"
 extras = ["download", "install"]
 requires_python = ">=3.8"
 summary = "Installer for Python Build Standalone"
 groups = ["dev"]
 dependencies = [
     "httpx<1,>=0.27.0",
-    "pbs-installer==2026.3.10",
+    "pbs-installer==2026.3.20",
     "zstandard>=0.21.0",
 ]
 files = [
-    {file = "pbs_installer-2026.3.10-py3-none-any.whl", hash = "sha256:cbe0dfea88ed3e02520462ba068c6ff28691ee401d2ca0af8edc9a2f92485a8c"},
-    {file = "pbs_installer-2026.3.10.tar.gz", hash = "sha256:a0a79509de89d6a2b12033b43b2685627b1428d12fc2d706d4ba8b245b85eda0"},
+    {file = "pbs_installer-2026.3.20-py3-none-any.whl", hash = "sha256:09f6363b490176952f2a3f62f673e5380cf3c470bbbf214b2f2027f33c4d5f22"},
+    {file = "pbs_installer-2026.3.20.tar.gz", hash = "sha256:6ba456ca6e0f47d8ce47d4ba8817bc69de8bf3fca819582073ead21a65e0d2a7"},
 ]
 
 [[package]]
@@ -2243,7 +2243,7 @@ files = [
 
 [[package]]
 name = "python-discovery"
-version = "1.1.3"
+version = "1.2.0"
 requires_python = ">=3.8"
 summary = "Python interpreter discovery"
 groups = ["dev"]
@@ -2252,8 +2252,8 @@ dependencies = [
     "platformdirs<5,>=4.3.6",
 ]
 files = [
-    {file = "python_discovery-1.1.3-py3-none-any.whl", hash = "sha256:90e795f0121bc84572e737c9aa9966311b9fde44ffb88a5953b3ec9b31c6945e"},
-    {file = "python_discovery-1.1.3.tar.gz", hash = "sha256:7acca36e818cd88e9b2ba03e045ad7e93e1713e29c6bbfba5d90202310b7baa5"},
+    {file = "python_discovery-1.2.0-py3-none-any.whl", hash = "sha256:1e108f1bbe2ed0ef089823d28805d5ad32be8e734b86a5f212bf89b71c266e4a"},
+    {file = "python_discovery-1.2.0.tar.gz", hash = "sha256:7d33e350704818b09e3da2bd419d37e21e7c30db6e0977bb438916e06b41b5b1"},
 ]
 
 [[package]]
@@ -2844,6 +2844,41 @@ dependencies = [
 files = [
     {file = "transformers-5.3.0-py3-none-any.whl", hash = "sha256:50ac8c89c3c7033444fb3f9f53138096b997ebb70d4b5e50a2e810bf12d3d29a"},
     {file = "transformers-5.3.0.tar.gz", hash = "sha256:009555b364029da9e2946d41f1c5de9f15e6b1df46b189b7293f33a161b9c557"},
+]
+
+[[package]]
+name = "tree-sitter"
+version = "0.25.2"
+requires_python = ">=3.10"
+summary = "Python bindings to the Tree-sitter parsing library"
+groups = ["default"]
+files = [
+    {file = "tree-sitter-0.25.2.tar.gz", hash = "sha256:fe43c158555da46723b28b52e058ad444195afd1db3ca7720c59a254544e9c20"},
+    {file = "tree_sitter-0.25.2-cp314-cp314-macosx_10_13_x86_64.whl", hash = "sha256:65d3c931013ea798b502782acab986bbf47ba2c452610ab0776cf4a8ef150fc0"},
+    {file = "tree_sitter-0.25.2-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:bda059af9d621918efb813b22fb06b3fe00c3e94079c6143fcb2c565eb44cb87"},
+    {file = "tree_sitter-0.25.2-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:eac4e8e4c7060c75f395feec46421eb61212cb73998dbe004b7384724f3682ab"},
+    {file = "tree_sitter-0.25.2-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:260586381b23be33b6191a07cea3d44ecbd6c01aa4c6b027a0439145fcbc3358"},
+    {file = "tree_sitter-0.25.2-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:7d2ee1acbacebe50ba0f85fff1bc05e65d877958f00880f49f9b2af38dce1af0"},
+    {file = "tree_sitter-0.25.2-cp314-cp314-win_amd64.whl", hash = "sha256:4973b718fcadfb04e59e746abfbb0288694159c6aeecd2add59320c03368c721"},
+    {file = "tree_sitter-0.25.2-cp314-cp314-win_arm64.whl", hash = "sha256:b8d4429954a3beb3e844e2872610d2a4800ba4eb42bb1990c6a4b1949b18459f"},
+]
+
+[[package]]
+name = "tree-sitter-python"
+version = "0.25.0"
+requires_python = ">=3.10"
+summary = "Python grammar for tree-sitter"
+groups = ["default"]
+files = [
+    {file = "tree_sitter_python-0.25.0-cp310-abi3-macosx_10_9_x86_64.whl", hash = "sha256:14a79a47ddef72f987d5a2c122d148a812169d7484ff5c75a3db9609d419f361"},
+    {file = "tree_sitter_python-0.25.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:480c21dbd995b7fe44813e741d71fed10ba695e7caab627fb034e3828469d762"},
+    {file = "tree_sitter_python-0.25.0-cp310-abi3-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:86f118e5eecad616ecdb81d171a36dde9bef5a0b21ed71ea9c3e390813c3baf5"},
+    {file = "tree_sitter_python-0.25.0-cp310-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:be71650ca2b93b6e9649e5d65c6811aad87a7614c8c1003246b303f6b150f61b"},
+    {file = "tree_sitter_python-0.25.0-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:e6d5b5799628cc0f24691ab2a172a8e676f668fe90dc60468bee14084a35c16d"},
+    {file = "tree_sitter_python-0.25.0-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:71959832fc5d9642e52c11f2f7d79ae520b461e63334927e93ca46cd61cd9683"},
+    {file = "tree_sitter_python-0.25.0-cp310-abi3-win_amd64.whl", hash = "sha256:9bcde33f18792de54ee579b00e1b4fe186b7926825444766f849bf7181793a76"},
+    {file = "tree_sitter_python-0.25.0-cp310-abi3-win_arm64.whl", hash = "sha256:0fbf6a3774ad7e89ee891851204c2e2c47e12b63a5edbe2e9156997731c128bb"},
+    {file = "tree_sitter_python-0.25.0.tar.gz", hash = "sha256:b13e090f725f5b9c86aa455a268553c65cadf325471ad5b65cd29cac8a1a68ac"},
 ]
 
 [[package]]
