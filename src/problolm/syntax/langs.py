@@ -11,7 +11,7 @@ from typing import Any
 from pygments import lexers
 from tree_sitter import Language, Tree
 
-__all__ = ["guess_from_filename", "grammar_for", "KnownFileType"]
+__all__ = ["guess_from_filename", "grammar_for", "LangName"]
 
 type LangaugeParser = Callable[[bytes], Tree]
 
@@ -27,7 +27,9 @@ def grammar_for(filename: str | Path, /) -> Callable[[], Language]:
     return result
 
 
-class KnownFileType(StrEnum):
+class LangName(StrEnum):
+    "Enum for the names of the languages."
+
     PYTHON = "Python"
     CPP = "C++"
     GO = "Go"
@@ -50,7 +52,7 @@ class KnownFileType(StrEnum):
     YAML = "YAML"
 
 
-def guess_from_filename(filename: str | Path, /) -> KnownFileType:
+def guess_from_filename(filename: str | Path, /) -> LangName:
     "Guess the given filename as the language."
 
     guess = _guess_from_filename(filename)
@@ -61,22 +63,22 @@ def guess_from_filename(filename: str | Path, /) -> KnownFileType:
         )
 
     # Go to the above defined types.
-    if guess in KnownFileType:
-        return KnownFileType(guess)
+    if guess in LangName:
+        return LangName(guess)
 
     # Handle some known types we want to handle as another type..
     match guess:
         # Since C++ is compatible with C, and often .h files are C++, we treat C as C++.
         case "C":
-            return KnownFileType.CPP
+            return LangName.CPP
 
         # TSX is a superset of JSX, and we don't have a JSX parser.
         case "JSX":
-            return KnownFileType.TSX
+            return LangName.TSX
 
         # I don't know why fortran has fixed vs normal.
         case "FortranFixed":
-            return KnownFileType.FORTRAN
+            return LangName.FORTRAN
 
     raise NotImplementedError(f"Filetype is not known for '{filename}'.")
 
@@ -90,104 +92,104 @@ def _guess_from_filename(filename: str | Path, /) -> str | None:
         return None
 
 
-def _get_grammar_from_lang(file_type: KnownFileType, /) -> Callable[[], object]:
+def _get_grammar_from_lang(file_type: LangName, /) -> Callable[[], object]:
     match file_type:
-        case KnownFileType.PYTHON:
+        case LangName.PYTHON:
             import tree_sitter_python
 
             return tree_sitter_python.language
 
-        case KnownFileType.CPP:
+        case LangName.CPP:
             import tree_sitter_cpp
 
             return tree_sitter_cpp.language
 
-        case KnownFileType.GO:
+        case LangName.GO:
             import tree_sitter_go
 
             return tree_sitter_go.language
 
-        case KnownFileType.JS:
+        case LangName.JS:
             import tree_sitter_javascript
 
             return tree_sitter_javascript.language
 
-        case KnownFileType.TS:
+        case LangName.TS:
             import tree_sitter_typescript
 
             return tree_sitter_typescript.language_typescript
 
-        case KnownFileType.TSX:
+        case LangName.TSX:
             import tree_sitter_typescript
 
             return tree_sitter_typescript.language_tsx
 
-        case KnownFileType.JAVA:
+        case LangName.JAVA:
             import tree_sitter_java
 
             return tree_sitter_java.language
 
-        case KnownFileType.CS:
+        case LangName.CS:
             import tree_sitter_c_sharp
 
             return tree_sitter_c_sharp.language
 
-        case KnownFileType.FORTRAN:
+        case LangName.FORTRAN:
             import tree_sitter_fortran
 
             return tree_sitter_fortran.language
 
-        case KnownFileType.RUST:
+        case LangName.RUST:
             import tree_sitter_rust
 
             return tree_sitter_rust.language
 
-        case KnownFileType.RUBY:
+        case LangName.RUBY:
             import tree_sitter_ruby
 
             return tree_sitter_ruby.language
 
-        case KnownFileType.HTML:
+        case LangName.HTML:
             import tree_sitter_html
 
             return tree_sitter_html.language
 
-        case KnownFileType.CSS:
+        case LangName.CSS:
             import tree_sitter_css
 
             return tree_sitter_css.language
 
-        case KnownFileType.PHP:
+        case LangName.PHP:
             import tree_sitter_php
 
             return tree_sitter_php.language_php
 
-        case KnownFileType.ELIXIR:
+        case LangName.ELIXIR:
             import tree_sitter_elixir
 
             return tree_sitter_elixir.language
 
-        case KnownFileType.BASH:
+        case LangName.BASH:
             import tree_sitter_bash
 
             return tree_sitter_bash.language
 
-        case KnownFileType.MAKE:
+        case LangName.MAKE:
             import tree_sitter_make
 
             return tree_sitter_make.language
 
-        case KnownFileType.JSON:
+        case LangName.JSON:
             import tree_sitter_json
 
             return tree_sitter_json.language
 
-        case KnownFileType.TOML:
+        case LangName.TOML:
             import tree_sitter_toml
 
             return tree_sitter_toml.language
 
-        case KnownFileType.YAML:
+        case LangName.YAML:
             import tree_sitter_yaml
 
             return tree_sitter_yaml.language
