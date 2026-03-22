@@ -4,13 +4,17 @@
 
 import dataclasses as dcls
 import difflib
+import re
 from collections.abc import Sequence
 from typing import NoReturn
-import re
-from problolm.fs import File, Folder
+from pygments import lexers
+from rich import markup
 
+from problolm.fs import File, Folder
+from rich.syntax import Syntax
 from .commits import Commit
 from .fs import TrieNode
+from rich.text import Text
 
 __all__ = ["Delta"]
 
@@ -44,10 +48,16 @@ class Delta:
     newer_path: str | None
 
     def __str__(self) -> str:
-        return self._as_string(rich=False)
+        return self.__as_string(rich=False)
 
     def __rich__(self) -> str:
-        return self._as_string(rich=True)
+        return self.__as_string(rich=True)
+
+    @property
+    def lexer(self):
+        path = self.older_path or self.newer_path or ""
+        assert path
+        return lexers.get_lexer_for_filename(path)
 
     @property
     def is_created(self) -> bool:
@@ -63,52 +73,44 @@ class Delta:
     def _newer_text(self) -> Sequence[str]:
         return _read_lines_from_commit_path(self.newer, self.newer_path)
 
-    def _as_string(self, rich: bool) -> str:
+    def __as_string(self, rich: bool) -> str:
         "Convert `self` to string. If `rich_color` is given, color using `rich` syntax."
+        return "\n".join(self.maybe_color_line_diffs(color=rich))
 
-        return "\n".join(self._maybe_color_line_diffs(color=rich))
-
-    def _maybe_color_line_diffs(self, color: bool):
+    def maybe_color_line_diffs(self, color: bool):
         text = difflib.unified_diff(
             a=self._older_text(),
             b=self._newer_text(),
             fromfile=self.older_path or "",
             tofile=self.newer_path or "",
         )
-        render = _color_line if color else lambda x: x
+        render = self._color_line if color else lambda x: x
 
         for line in text:
             yield render(line)
 
+    def _color_line(self, line: str):
+        if m := _ADD_REGEX.match(line):
+            return self.__split_modifier("green", *m.groups())
 
-def _wrap_style(text: str, style: str | None) -> str:
-    if style is None:
-        return text
+        if m := _SUB_REGEX.match(line):
+            return self.__split_modifier("red", *m.groups())
 
-    return f"[{style}] {text} [/{style}]"
+        if _HUNK_REGEX.match(line):
+            return f"[cyan]{markup.escape(line)}[/cyan]"
+
+        return markup.escape(line)
+
+    def __split_modifier(self, color: str, modifier: str, rest: str) -> str:
+        rest = markup.escape(rest)
+        syntax = Syntax(rest, lexer=self.lexer)
+        highlight = str(syntax.highlight(rest))
+        return f"[{color}]{modifier}[/{color}]" + highlight.rstrip("\n")
 
 
-_ADD_REGEX = re.compile(r"(\+|\+\+\+ ).*")
-_SUB_REGEX = re.compile(r"(\-|\-\-\- ).*")
+_ADD_REGEX = re.compile(r"(\+\+\+ |\+)(.*)")
+_SUB_REGEX = re.compile(r"(\-\-\- |\-)(.*)")
 _HUNK_REGEX = re.compile(r"^@@ -(\d+),(\d+) \+(\d+),(\d+) @@")
-
-
-def _get_line_style(line: str):
-    if _ADD_REGEX.match(line):
-        return "green"
-
-    if _SUB_REGEX.match(line):
-        return "red"
-
-    if _HUNK_REGEX.match(line):
-        return "cyan"
-
-    return None
-
-
-def _color_line(line: str):
-    color = _get_line_style(line)
-    return _wrap_style(line, color)
 
 
 def _read_lines_from_commit_path(commit: Commit, path: str | None) -> Sequence[str]:
