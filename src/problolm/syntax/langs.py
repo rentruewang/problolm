@@ -33,6 +33,8 @@ class SupportedFileType(StrEnum):
     GO = "Go"
     HTML = "HTML"
     CSS = "CSS"
+    JAVA = "Java"
+    CS = "C#"
     JS = "JavaScript"
     TS = "TypeScript"
     TSX = "TSX"
@@ -40,6 +42,7 @@ class SupportedFileType(StrEnum):
     RUST = "Rust"
     RUBY = "Ruby"
     PHP = "PHP"
+    ELIXIR = "Elixir"
 
 
 @typing.no_type_check
@@ -83,7 +86,6 @@ def _guess_from_filename(filename: str | Path, /) -> str | None:
 
 
 def _get_grammar_from_lang(file_type: SupportedFileType, /) -> Callable[[], object]:
-
     match file_type:
         case SupportedFileType.PYTHON:
             import tree_sitter_python
@@ -115,6 +117,16 @@ def _get_grammar_from_lang(file_type: SupportedFileType, /) -> Callable[[], obje
 
             return tree_sitter_typescript.language_tsx
 
+        case SupportedFileType.JAVA:
+            import tree_sitter_java
+
+            return tree_sitter_java.language
+
+        case SupportedFileType.CS:
+            import tree_sitter_c_sharp
+
+            return tree_sitter_c_sharp.language
+
         case SupportedFileType.FORTRAN:
             import tree_sitter_fortran
 
@@ -144,5 +156,10 @@ def _get_grammar_from_lang(file_type: SupportedFileType, /) -> Callable[[], obje
             import tree_sitter_php
 
             return tree_sitter_php.language_php
+
+        case SupportedFileType.ELIXIR:
+            import tree_sitter_elixir
+
+            return tree_sitter_elixir.language
 
     raise NotImplementedError(f"Unreachable! Forgot to handle file type: {file_type}.")
