@@ -3,18 +3,19 @@
 "The diff information."
 
 import dataclasses as dcls
-import difflib
 import re
 from collections.abc import Sequence
+from difflib import SequenceMatcher
 from typing import NoReturn
+
 from pygments import lexers
 from rich import markup
+from rich.syntax import Syntax
 
 from problolm.fs import File, Folder
-from rich.syntax import Syntax
+
 from .commits import Commit
 from .fs import TrieNode
-from rich.text import Text
 
 __all__ = ["Delta"]
 
@@ -78,7 +79,7 @@ class Delta:
         return "\n".join(self.maybe_color_line_diffs(color=rich))
 
     def maybe_color_line_diffs(self, color: bool):
-        text = difflib.unified_diff(
+        text = unified_diff_from_seq(
             a=self._older_text(),
             b=self._newer_text(),
             fromfile=self.older_path or "",
@@ -134,3 +135,28 @@ def _read_lines_from_commit_path(commit: Commit, path: str | None) -> Sequence[s
         return read_lines(file)
     except RuntimeError:
         return ()
+
+
+def unified_diff_from_seq(
+    a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str
+):
+    matcher = SequenceMatcher(None, a, b)
+    yield f"--- {fromfile}"
+    yield f"+++ {tofile}"
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            continue
+
+        yield ""
+        yield _gen_hunk(i1, i2, j1, j2)
+
+        for line in a[i1:i2]:
+            yield f"-{line}"
+
+        for line in b[j1:j2]:
+            yield f"+{line}"
+
+
+def _gen_hunk(i1: int, i2: int, j1: int, j2: int) -> str:
+    return f"@@ -{i1+1},{i2-i1} +{j1+1},{j2-j1} @@"
