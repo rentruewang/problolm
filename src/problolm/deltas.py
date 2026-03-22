@@ -99,7 +99,7 @@ class Delta:
         if _HUNK_REGEX.match(line):
             return f"[cyan]{markup.escape(line)}[/cyan]"
 
-        return markup.escape(line)
+        return Syntax(code=markup.escape(line), lexer=self.extension)
 
     def __split_modifier(self, color: str, modifier: str, rest: str) -> str:
         rest = markup.escape(rest)
