@@ -71,9 +71,6 @@ class Folder(TrieNode):
 
     items: dict[str, TrieNode] = dcls.field(default_factory=dict)
 
-    def __str__(self):
-        return str(self.__rich__())
-
     def __rich__(self):
 
         def add_tree(node: TrieNode, tree: RichTree):
@@ -126,10 +123,22 @@ class Folder(TrieNode):
         except KeyError:
             raise ValueError(f"{self!r} / {key} is not presenet.")
 
-    def add_folder(self, key: str) -> Self:
+    def _get_and_assert_if_present[T](self, key: str, typ: type[T]) -> T | None:
+        if key not in self.items:
+            return None
+
+        result = self.items[key]
+        assert isinstance(result, typ)
+        assert issubclass(typ, TrieNode)
+        return result
+
+    def add_folder(self, key: str) -> Folder:
         """
         Add a folder to the current folder.
         """
+
+        if folder := self._get_and_assert_if_present(key, Folder):
+            return folder
 
         new_node = type(self)(key, parent=self)
         self.items[key] = new_node
@@ -139,6 +148,10 @@ class Folder(TrieNode):
         """
         Add a file to the current folder.
         """
+
+        if file := self._get_and_assert_if_present(key, File):
+            return file
+
         new_node = File(path=key, data=lines, parent=self)
         self.items[key] = new_node
         return new_node
@@ -238,29 +251,30 @@ def consume(obj: Tree, /) -> Folder:
     return root
 
 
-def _handle_traversal(file, root: Folder):
+def _handle_traversal(file, root: Folder) -> None:
     match file:
         case Tree():
-            handle_tree(file, root=root)
+            _handle_tree(file, root=root)
         case Blob():
-            handle_blob(file, root=root)
+            _handle_blob(file, root=root)
         case Submodule():
-            handle_submodule(file, root=root)
+            _handle_submodule(file, root=root)
         case _:
             raise TypeError(type(file))
 
 
-def handle_tree(tree: Tree, /, root: Folder) -> TrieNode:
+def _handle_tree(tree: Tree, /, root: Folder) -> TrieNode:
     pp = _create_parent_path(tree, root=root)
-    return pp.parent.add_folder(pp.path)
+    folder = pp.parent.add_folder(pp.path)
+    return folder
 
 
-def handle_blob(blob: Blob, /, root: Folder):
+def _handle_blob(blob: Blob, /, root: Folder):
     pp = _create_parent_path(blob, root=root)
     return pp.parent.add_file(pp.path, blob.data_stream.read())
 
 
-def handle_submodule(submodule: Submodule, /, root: Folder):
+def _handle_submodule(submodule: Submodule, /, root: Folder):
     raise NotImplementedError
 
 
