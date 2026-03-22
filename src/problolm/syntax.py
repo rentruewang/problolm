@@ -82,15 +82,18 @@ def _flatten(cursor: TreeCursor) -> Generator[Node]:
     assert cursor.node
     yield cursor.node
 
+    # End the traversal when there is no children.
     if not cursor.goto_first_child():
         return
 
+    # Do-while loop rather than while because we already entered the first children.
     while True:
         yield from _flatten(cursor)
 
         if not cursor.goto_next_sibling():
             break
 
+    # Exit. Go up.
     cursor.goto_parent()
 
 
