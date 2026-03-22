@@ -6,9 +6,9 @@ import dataclasses as dcls
 import re
 from collections.abc import Sequence
 from difflib import SequenceMatcher
+from pathlib import Path
 from typing import NoReturn
 
-from pygments import lexers
 from rich import markup
 from rich.syntax import Syntax
 
@@ -55,10 +55,9 @@ class Delta:
         return self.__as_string(rich=True)
 
     @property
-    def lexer(self):
+    def extension(self):
         path = self.older_path or self.newer_path or ""
-        assert path
-        return lexers.get_lexer_for_filename(path)
+        return Path(path).suffix[1:]
 
     @property
     def is_created(self) -> bool:
@@ -104,7 +103,7 @@ class Delta:
 
     def __split_modifier(self, color: str, modifier: str, rest: str) -> str:
         rest = markup.escape(rest)
-        syntax = Syntax(rest, lexer=self.lexer)
+        syntax = Syntax(rest, lexer=self.extension)
         highlight = str(syntax.highlight(rest))
         return f"[{color}]{modifier}[/{color}]" + highlight.rstrip("\n")
 
