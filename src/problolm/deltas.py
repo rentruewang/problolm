@@ -6,7 +6,7 @@ import dataclasses as dcls
 import difflib
 from collections.abc import Sequence
 from typing import NoReturn
-
+import re
 from problolm.fs import File, Folder
 
 from .commits import Commit
@@ -88,18 +88,26 @@ def _wrap_style(text: str, style: str | None) -> str:
     return f"[{style}] {text} [/{style}]"
 
 
-def _get_line_style(modifier: str):
-    match modifier:
-        case "+":
-            return "green"
-        case "-":
-            return "red"
-        case _:
-            return None
+_ADD_REGEX = re.compile(r"(\+|\+\+\+ ).*")
+_SUB_REGEX = re.compile(r"(\-|\-\-\- ).*")
+_HUNK_REGEX = re.compile(r"^@@ -(\d+),(\d+) \+(\d+),(\d+) @@")
+
+
+def _get_line_style(line: str):
+    if _ADD_REGEX.match(line):
+        return "green"
+
+    if _SUB_REGEX.match(line):
+        return "red"
+
+    if _HUNK_REGEX.match(line):
+        return "cyan"
+
+    return None
 
 
 def _color_line(line: str):
-    color = _get_line_style(line[0])
+    color = _get_line_style(line)
     return _wrap_style(line, color)
 
 
