@@ -3,14 +3,13 @@
 "Parsing the code into syntaxes."
 
 import dataclasses as dcls
-import functools
 import logging
 from collections.abc import Generator
-from os import PathLike
 from pathlib import Path
 
-import tree_sitter_python as tspython
-from tree_sitter import Language, Node, Parser, Point, Tree, TreeCursor
+from tree_sitter import Node, Parser, Point, Tree, TreeCursor
+
+from . import langs
 
 __all__ = ["parse_file_syntax", "parse_code_into_tree"]
 
@@ -28,27 +27,25 @@ class ParsedSyntax:
         return f"{{{self.grammar}}} {self.item!r}"
 
 
-def parse_file_syntax(file: PathLike) -> list[ParsedSyntax]:
+def parse_file_syntax(file: str | Path) -> list[ParsedSyntax]:
     """
     Parse the syntax types of a source file in occuring order.
     """
 
     file = Path(file)
     code = file.read_bytes()
-    tree = parse_code_into_tree(code=code, file_type=file.suffix[1:])
+    tree = parse_code_into_tree(code=code, filename=file)
     return parse_syntax_tree(code=code, tree=tree)
 
 
-def parse_code_into_tree(code: bytes, file_type: str) -> Tree:
+def parse_code_into_tree(code: bytes, filename: str | Path) -> Tree:
     """
     Parse the tree from the source file.
     """
 
-    match file_type:
-        case "py" | "python":
-            return parse_py(code)
-        case _:
-            raise NotImplementedError(f"Don't know how to handle {file_type=}.")
+    langauge_grammar = langs.grammar_for(filename)
+    parser = Parser(language=langauge_grammar())
+    return parser.parse(code)
 
 
 def parse_syntax_tree(code: bytes, tree: Tree) -> list[ParsedSyntax]:
@@ -93,13 +90,3 @@ def _flatten(cursor: TreeCursor) -> Generator[Node]:
 
     # Exit. Go up.
     cursor.goto_parent()
-
-
-@functools.cache
-def _parser():
-    lang = Language(tspython.language())
-    return Parser(lang)
-
-
-def parse_py(code: bytes) -> Tree:
-    return _parser().parse(code)
