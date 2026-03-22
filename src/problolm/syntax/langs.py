@@ -38,11 +38,13 @@ class SupportedFileType(StrEnum):
     JS = "JavaScript"
     TS = "TypeScript"
     TSX = "TSX"
+    BASH = "Bash"
     FORTRAN = "Fortran"
     RUST = "Rust"
     RUBY = "Ruby"
     PHP = "PHP"
     ELIXIR = "Elixir"
+    MAKE = "Makefile"
 
 
 @typing.no_type_check
@@ -162,4 +164,15 @@ def _get_grammar_from_lang(file_type: SupportedFileType, /) -> Callable[[], obje
 
             return tree_sitter_elixir.language
 
+        case SupportedFileType.BASH:
+            import tree_sitter_bash
+
+            return tree_sitter_bash.language
+
+        case SupportedFileType.MAKE:
+            import tree_sitter_make
+
+            return tree_sitter_make.language
+
+    # Hint: Hover on the `file_type` and see if it's `Never` type.
     raise NotImplementedError(f"Unreachable! Forgot to handle file type: {file_type}.")
