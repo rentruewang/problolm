@@ -21,9 +21,16 @@ def grammar_for(filename: str | Path, /) -> Callable[[], Language]:
     that can be looked up with the specified `aliases`.
     """
 
-    def as_language():
+    def as_language() -> Language:
         lang = guess_from_filename(filename)
-        grammar = _get_grammar_from_lang(lang)
+
+        try:
+            grammar = _get_grammar_from_lang(lang)
+        except ImportError as ie:
+            raise ImportError(
+                "Import not found. Try installing with `problolm[langs]` extras."
+            )
+
         return Language(grammar())
 
     return as_language
