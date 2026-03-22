@@ -6,7 +6,6 @@ import typing
 from collections.abc import Callable
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
 
 from pygments import lexers
 from tree_sitter import Language, Tree
@@ -22,9 +21,12 @@ def grammar_for(filename: str | Path, /) -> Callable[[], Language]:
     that can be looked up with the specified `aliases`.
     """
 
-    lang = guess_from_filename(filename)
-    result: Any = _get_grammar_from_lang(lang)
-    return result
+    def as_language():
+        lang = guess_from_filename(filename)
+        grammar = _get_grammar_from_lang(lang)
+        return Language(grammar())
+
+    return as_language
 
 
 class LangName(StrEnum):
@@ -50,6 +52,7 @@ class LangName(StrEnum):
     JSON = "JSON"
     TOML = "TOML"
     YAML = "YAML"
+    MD = "Markdown"
 
 
 def guess_from_filename(filename: str | Path, /) -> LangName:
@@ -193,6 +196,11 @@ def _get_grammar_from_lang(file_type: LangName, /) -> Callable[[], object]:
             import tree_sitter_yaml
 
             return tree_sitter_yaml.language
+
+        case LangName.MD:
+            import tree_sitter_markdown
+
+            return tree_sitter_markdown.language
 
     # Hint: Hover on the `file_type` and see if it's `Never` type.
     raise NotImplementedError(f"Unreachable! Forgot to handle file type: {file_type}.")

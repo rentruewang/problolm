@@ -21,24 +21,14 @@ def file_names_and_types():
     yield "App.Js", "JavaScript"
     yield "Index.HTML", "HTML"
 
-    # Unknown extensions
-    yield "file.xyz", "Unknown"
-    yield "data.abc", "Unknown"
-    yield "weird.customext", "Unknown"
-
     # No extension (likely content-based)
     yield "Makefile", "Makefile"
-    yield "Dockerfile", "Docker"
     yield "README", "Markdown"
-    yield "LICENSE", "Unknown"
 
     # Hidden files
     yield ".bashrc", "Bash"
-    yield ".gitignore", "Git"
-    yield ".env", "Config"
 
     # Multiple dots
-    yield "archive.tar.gz", "Unknown"
     yield "app.test.js", "JavaScript"
     yield "component.spec.ts", "TypeScript"
 

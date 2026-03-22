@@ -5,7 +5,7 @@
 groups = ["default", "dev", "jupyter", "pytest", "tree-sitter-langs"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:7f2c57b3211c172660d14135649ee1c659470001b5a0f142644ada2f73aaa33f"
+content_hash = "sha256:9b5e8915a6efb1a1e1d85e02f1eb6970f293336d77113f052b87f853494932b3"
 
 [[metadata.targets]]
 requires_python = ">=3.14,<3.15"
@@ -3070,6 +3070,24 @@ files = [
     {file = "tree_sitter_make-1.1.1-cp39-abi3-win_amd64.whl", hash = "sha256:0f6325bf5255bfdb3895aa18cbf3618734bc94f31bd89447559137675160a424"},
     {file = "tree_sitter_make-1.1.1-cp39-abi3-win_arm64.whl", hash = "sha256:a97763826659d692784564a74cfc915c0198372ce018ac2c4ea1a511437bb07f"},
     {file = "tree_sitter_make-1.1.1.tar.gz", hash = "sha256:ef394673ab83956dffb3986526f4c059082ff2d84c87f9da18ab30030f561b4c"},
+]
+
+[[package]]
+name = "tree-sitter-markdown"
+version = "0.5.1"
+requires_python = ">=3.9"
+summary = "Markdown grammar for tree-sitter"
+groups = ["tree-sitter-langs"]
+files = [
+    {file = "tree_sitter_markdown-0.5.1-cp39-abi3-macosx_10_9_x86_64.whl", hash = "sha256:f00ce3f48f127377983859fcb93caf0693cbc7970f8c41f1e2bd21e4d56bdfd8"},
+    {file = "tree_sitter_markdown-0.5.1-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:1ec4cc5d7b0d188bad22247501ab13663bb1bf1a60c2c020a22877fabce8daa9"},
+    {file = "tree_sitter_markdown-0.5.1-cp39-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:727242a70c46222092eba86c102301646f21ba32aee221f4b1f70e2020755e81"},
+    {file = "tree_sitter_markdown-0.5.1-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c0b2fde19e692bb90e300d9788887528c624b659c794de6337f8193396de4399"},
+    {file = "tree_sitter_markdown-0.5.1-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:13da82db04cec7910b6afd4a67d02da9ef402df8d56fc6ed85e00584af1730ee"},
+    {file = "tree_sitter_markdown-0.5.1-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:b8a8a04a5d942c177cc590ec40074fcf3658f3a7c0a3388a8575990003665d8c"},
+    {file = "tree_sitter_markdown-0.5.1-cp39-abi3-win_amd64.whl", hash = "sha256:b1b0e4cbcf5a7b85005f1e9266fc2ed9b649b41a6048f3b1abae3612368d97a6"},
+    {file = "tree_sitter_markdown-0.5.1-cp39-abi3-win_arm64.whl", hash = "sha256:2296ef53a757d8f5b848616706d0518e04d487bc7748bd05755d4a3a65711542"},
+    {file = "tree_sitter_markdown-0.5.1.tar.gz", hash = "sha256:6c69d7270a7e09be8988ced44584c09a6a4f541cea0dc394dd1c1a5ac3b5601d"},
 ]
 
 [[package]]

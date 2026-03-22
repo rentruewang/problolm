@@ -7,7 +7,7 @@ import logging
 from collections.abc import Generator
 from pathlib import Path
 
-from tree_sitter import Node, Parser, Point, Tree, TreeCursor
+from tree_sitter import Language, Node, Parser, Point, Tree, TreeCursor
 
 from . import langs
 
@@ -43,8 +43,10 @@ def parse_code_into_tree(code: bytes, filename: str | Path) -> Tree:
     Parse the tree from the source file.
     """
 
-    langauge_grammar = langs.grammar_for(filename)
-    parser = Parser(language=langauge_grammar())
+    grammar_gen = langs.grammar_for(filename)
+    grammar = grammar_gen()
+    assert isinstance(grammar, Language), type(grammar)
+    parser = Parser(language=grammar)
     return parser.parse(code)
 
 
