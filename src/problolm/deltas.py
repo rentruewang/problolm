@@ -3,87 +3,162 @@
 "The diff information."
 
 import dataclasses as dcls
-import typing
-from typing import Any
+import re
+from collections.abc import Sequence
+from difflib import SequenceMatcher
+from pathlib import Path
+from typing import NoReturn
 
-if typing.TYPE_CHECKING:
-    from git import Diff as _Diff
+from rich import markup
+from rich.syntax import Syntax
 
+from problolm.fs import File, Folder
+
+from .commits import Commit
+from .fs import TrieNode
 
 __all__ = ["Delta"]
 
 
+class _ReadLines(TrieNode.Visitor[list[str]]):
+    def visit_file(self, file: File) -> list[str]:
+        try:
+            return file.read().splitlines()
+        except UnicodeDecodeError:
+            raise RuntimeError
+
+    def visit_folder(self, folder: Folder) -> NoReturn:
+        raise ValueError(f"Does not handle {folder=}")
+
+
 @dcls.dataclass(frozen=True)
 class Delta:
-    "Delta is a `git.Diff` wrapper object that exposes the API to `problolm`."
+    """
+    `Delta` is a `git.Diff` wrapper object, representing the diff between modes.
+    """
 
-    diff: _Diff
+    older: Commit
+    "The older commit."
+
+    older_path: str | None
+    "The file in older commit. If none, means that it was newly created."
+
+    newer: Commit
+    "The newer commit."
+
+    newer_path: str | None
 
     def __str__(self) -> str:
-        return self._as_string(rich_color=False)
+        return self.__as_string(rich=False)
 
     def __rich__(self) -> str:
-        return self._as_string(rich_color=True)
+        return self.__as_string(rich=True)
 
     @property
-    def original_path(self):
-        return self.diff.a_path
+    def extension(self):
+        path = self.older_path or self.newer_path or ""
+        return Path(path).suffix[1:]
 
     @property
-    def updated_path(self):
-        return self.diff.b_path
+    def is_created(self) -> bool:
+        return self.older_path is None
 
-    def _as_string(self, rich_color: bool) -> str:
+    @property
+    def is_deleted(self) -> bool:
+        return self.newer_path is None
+
+    def _older_text(self) -> Sequence[str]:
+        return _read_lines_from_commit_path(self.older, self.older_path)
+
+    def _newer_text(self) -> Sequence[str]:
+        return _read_lines_from_commit_path(self.newer, self.newer_path)
+
+    def __as_string(self, rich: bool) -> str:
         "Convert `self` to string. If `rich_color` is given, color using `rich` syntax."
+        return "\n".join(self.maybe_color_line_diffs(color=rich))
 
-        sb = []
+    def maybe_color_line_diffs(self, color: bool):
+        text = unified_diff_from_seq(
+            a=self._older_text(),
+            b=self._newer_text(),
+            fromfile=self.older_path or "",
+            tofile=self.newer_path or "",
+        )
+        render = self._color_line if color else lambda x: x
 
-        if self.original_path:
-            sb.append(f"--- {self.original_path}")
-
-        if self.updated_path:
-            sb.append(f"+++ {self.updated_path}")
-
-        sb.extend(self._maybe_color_line_diffs(color=rich_color))
-        return "\n".join(sb)
-
-    def _maybe_color_line_diffs(self, color: bool):
-        text = _decode(self.diff.diff)
-        render = _color_line if color else lambda x: x
-
-        for line in text.splitlines():
+        for line in text:
             yield render(line)
 
+    def _color_line(self, line: str):
+        if m := _ADD_REGEX.match(line):
+            return self.__split_modifier("green", *m.groups())
 
-def _decode(item: Any) -> str:
-    match item:
-        case str():
-            return item
+        if m := _SUB_REGEX.match(line):
+            return self.__split_modifier("red", *m.groups())
 
-        case bytes():
-            return item.decode()
+        if _HUNK_REGEX.match(line):
+            return f"[cyan]{markup.escape(line)}[/cyan]"
 
-        case _:
-            return str(item)
+        return self.__highlight(line)
 
+    def __split_modifier(self, color: str, modifier: str, rest: str) -> str:
+        rest = markup.escape(rest)
+        return f"[{color}]{modifier}[/{color}]" + self.__highlight(rest)
 
-def _wrap_style(text: str, style: str | None) -> str:
-    if style is None:
-        return text
-
-    return f"[{style}] {text} [/{style}]"
-
-
-def _get_line_style(modifier: str):
-    match modifier:
-        case "+":
-            return "green"
-        case "-":
-            return "red"
-        case _:
-            return None
+    def __highlight(self, code: str):
+        syntax = Syntax(code, lexer=self.extension)
+        highlight = str(syntax.highlight(code))
+        return highlight.rstrip("\n")
 
 
-def _color_line(line: str):
-    color = _get_line_style(line[0])
-    return _wrap_style(line, color)
+_ADD_REGEX = re.compile(r"(\+\+\+ |\+)(.*)")
+_SUB_REGEX = re.compile(r"(\-\-\- |\-)(.*)")
+_HUNK_REGEX = re.compile(r"^@@ -(\d+),(\d+) \+(\d+),(\d+) @@")
+
+
+def _read_lines_from_commit_path(commit: Commit, path: str | None) -> Sequence[str]:
+    """
+    Read text lines from commit and path.
+    If the file at the path is binary or not exist, return `()`.
+
+    Raises:
+        ValueError: If the path corresponds to a folder.
+    """
+
+    if path is None:
+        return ()
+
+    # This raises `ValueError` if the path resolves to a folder.
+    # This means it would propagate up if it's a folder.
+    read_lines = _ReadLines().visit
+
+    try:
+        file = commit.fs() / path
+        return read_lines(file)
+    except RuntimeError:
+        return ()
+
+
+def unified_diff_from_seq(
+    a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str
+):
+    matcher = SequenceMatcher(None, a, b)
+    yield f"--- {fromfile}"
+    yield f"+++ {tofile}"
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            continue
+
+        yield ""
+        yield _gen_hunk(i1, i2, j1, j2)
+
+        for line in a[i1:i2]:
+            yield f"-{line}"
+
+        for line in b[j1:j2]:
+            yield f"+{line}"
+
+
+def _gen_hunk(i1: int, i2: int, j1: int, j2: int) -> str:
+    return f"@@ -{i1+1},{i2-i1} +{j1+1},{j2-j1} @@"

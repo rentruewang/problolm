@@ -2,7 +2,7 @@
 
 import pytest
 
-from problolm import Commit, RangeDiff
+from problolm import Commit, CommitRange
 
 
 @pytest.fixture(scope="module")
@@ -22,7 +22,7 @@ def parent(commit) -> Commit:
 
 @pytest.fixture(scope="module")
 def commit_parrent_diff(commit, parent):
-    return RangeDiff(commit, parent)
+    return CommitRange(commit, parent)
 
 
 def test_commits_eq(commit, short_commit):

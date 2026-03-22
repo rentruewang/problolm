@@ -9,7 +9,7 @@ import logging
 import typing
 from abc import ABC
 from collections.abc import Generator
-from typing import NamedTuple, Self
+from typing import NamedTuple, NoReturn, Self
 
 from git import Blob, Submodule, Tree
 from rich.tree import Tree as RichTree
@@ -71,8 +71,8 @@ class Folder(TrieNode):
 
     items: dict[str, TrieNode] = dcls.field(default_factory=dict)
 
-    def __str__(self):
-        return str(self.__rich__())
+    def __contains__(self, obj: str) -> bool:
+        return obj in self.items.keys()
 
     def __rich__(self):
 
@@ -124,12 +124,29 @@ class Folder(TrieNode):
         try:
             return self.items[key]
         except KeyError:
-            raise ValueError(repr(key))
+            raise ValueError(f"{self!r} / {key} is not presenet.")
 
-    def add_folder(self, key: str) -> Self:
+    def guarded_get[T](self, key: str, typ: type[T]) -> T | None:
+        """
+        Do a `get`, but with type guarding.
+        """
+
+        if key not in self:
+            return None
+
+        result = self.items[key]
+        assert isinstance(result, typ)
+        assert issubclass(typ, TrieNode)
+        return result
+
+    def add_folder(self, key: str) -> Folder:
         """
         Add a folder to the current folder.
+        If present, fetch the existing folder.
         """
+
+        if folder := self.guarded_get(key, Folder):
+            return folder
 
         new_node = type(self)(key, parent=self)
         self.items[key] = new_node
@@ -138,7 +155,12 @@ class Folder(TrieNode):
     def add_file(self, key: str, lines: bytes) -> File:
         """
         Add a file to the current folder.
+        If present, fetch the existing file.
         """
+
+        if file := self.guarded_get(key, File):
+            return file
+
         new_node = File(path=key, data=lines, parent=self)
         self.items[key] = new_node
         return new_node
@@ -171,15 +193,17 @@ class File(TrieNode):
     def __repr__(self) -> str:
         full_path = self.full_path()
 
-        if self.is_binary:
+        if self.is_binary():
             return f"Binary({full_path})"
         else:
             lines = self.read().count("\n") + 1
             return f"Text({full_path}, lines={lines})"
 
-    @property
-    def is_binary(self):
+    def is_binary(self) -> bool:
         return self._utf8_content is None
+
+    def is_text(self) -> bool:
+        return not self.is_binary()
 
     def read(self) -> str:
         """
@@ -236,29 +260,32 @@ def consume(obj: Tree, /) -> Folder:
     return root
 
 
-def _handle_traversal(file, root: Folder):
+def _handle_traversal(file, root: Folder) -> None:
     match file:
         case Tree():
-            handle_tree(file, root=root)
+            _handle_tree(file, root=root)
         case Blob():
-            handle_blob(file, root=root)
+            _handle_blob(file, root=root)
         case Submodule():
-            handle_submodule(file, root=root)
+            _handle_submodule(file, root=root)
         case _:
             raise TypeError(type(file))
 
 
-def handle_tree(tree: Tree, /, root: Folder) -> TrieNode:
+def _handle_tree(tree: Tree, /, root: Folder) -> Folder:
+    LOGGER.debug("Recurse into sub-tree: %s", tree.path)
     pp = _create_parent_path(tree, root=root)
-    return pp.parent.add_folder(pp.path)
+    folder = pp.parent.add_folder(pp.path)
+    return folder
 
 
-def handle_blob(blob: Blob, /, root: Folder):
+def _handle_blob(blob: Blob, /, root: Folder) -> File:
+    LOGGER.debug("Recurse into file: %s", blob.path)
     pp = _create_parent_path(blob, root=root)
     return pp.parent.add_file(pp.path, blob.data_stream.read())
 
 
-def handle_submodule(submodule: Submodule, /, root: Folder):
+def _handle_submodule(submodule: Submodule, /, root: Folder) -> NoReturn:
     raise NotImplementedError
 
 

@@ -3,15 +3,18 @@
 "The diff information."
 
 import dataclasses as dcls
+import logging
 
 from .commits import Commit
 from .deltas import Delta
 
-__all__ = ["RangeDiff"]
+__all__ = ["CommitRange"]
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dcls.dataclass(frozen=True)
-class RangeDiff:
+class CommitRange:
     "The commit diff."
 
     newer: Commit
@@ -35,7 +38,13 @@ class RangeDiff:
         return len(self.git)
 
     def __getitem__(self, idx: int) -> Delta:
-        return Delta(self.git[idx])
+        diff = self.git[idx]
+        return Delta(
+            older=self.older,
+            newer=self.newer,
+            older_path=diff.a_path,
+            newer_path=diff.b_path,
+        )
 
     def __iter__(self):
         for i in range(len(self)):
@@ -43,7 +52,7 @@ class RangeDiff:
 
     def __eq__(self, other: object):
         match other:
-            case RangeDiff():
+            case CommitRange():
                 return self.newer == other.newer and self.older == other.older
             case Commit():
                 return self.newer == other and self.older == other.parent
@@ -56,11 +65,11 @@ class RangeDiff:
 
     @property
     def original_paths(self) -> set[str]:
-        return {delta.original_path for delta in self if delta.original_path}
+        return {delta.older_path for delta in self if delta.older_path}
 
     @property
     def updated_paths(self) -> set[str]:
-        return {delta.updated_path for delta in self if delta.updated_path}
+        return {delta.newer_path for delta in self if delta.newer_path}
 
     @property
     def is_linear(self):
