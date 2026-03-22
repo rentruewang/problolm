@@ -43,10 +43,11 @@ def parse_tree(file: PathLike) -> Tree:
     """
 
     file = Path(file)
+    code = Path(file).read_bytes()
 
     match file.suffix:
         case ".py":
-            return python(file.read_bytes())
+            return parse_py(code)
         case _:
             raise NotImplementedError(f"Don't know how to handle {file}.")
 
@@ -99,5 +100,5 @@ def _parser():
     return Parser(lang)
 
 
-def python(code: bytes) -> Tree:
+def parse_py(code: bytes) -> Tree:
     return _parser().parse(code)
