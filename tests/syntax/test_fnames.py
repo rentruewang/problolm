@@ -23,7 +23,6 @@ def file_names_and_types():
 
     # No extension (likely content-based)
     yield "Makefile", "Makefile"
-    yield "README", "Markdown"
 
     # Hidden files
     yield ".bashrc", "Bash"
