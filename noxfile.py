@@ -3,11 +3,13 @@
 import dataclasses as dcls
 import functools
 import os
+from pathlib import Path
 
 import nox
 from nox import Session
 
 PYTHON_VERSIONS = ["3.14"]
+PWD = Path(__file__).parent
 
 
 @nox.session
@@ -214,10 +216,14 @@ class _Commands:
         "`black` command."
         self.pdm.run("black", ".")
 
-    def mypy(self):
+    def mypy(self, install_types: bool = False):
         "`mypy` command."
-        self.pdm.run("mypy", "src", "--install-types", "--non-interactive")
-        self.pdm.run("mypy", "src")
+
+        # First run probably.
+        if install_types or not (PWD / ".mypy_cache").exists():
+            self.pdm.run("mypy", ".", "--install-types", "--non-interactive")
+
+        self.pdm.run("mypy", ".")
 
     @property
     def pdm(self):

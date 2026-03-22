@@ -12,50 +12,51 @@ from pathlib import Path
 import tree_sitter_python as tspython
 from tree_sitter import Language, Node, Parser, Point, Tree, TreeCursor
 
-__all__ = ["parse_syntax_types"]
+__all__ = ["parse_file_syntax", "parse_code_into_tree"]
 
 LOGGER = logging.getLogger(__name__)
 
 
 @dcls.dataclass(frozen=True)
 class ParsedSyntax:
+    "The syntax in the output."
+
     item: str
     grammar: str
 
     def __repr__(self):
-        return f"[{self.grammar}] {self.item}"
+        return f"{{{self.grammar}}} {self.item!r}"
 
 
-def parse_syntax_types(file: PathLike) -> list[ParsedSyntax]:
+def parse_file_syntax(file: PathLike) -> list[ParsedSyntax]:
     """
     Parse the syntax types of a source file in occuring order.
     """
 
-    tree = parse_tree(file)
-    return syntax_types_ordered(file, tree)
+    file = Path(file)
+    code = file.read_bytes()
+    tree = parse_code_into_tree(code=code, file_type=file.suffix[1:])
+    return parse_syntax_tree(code=code, tree=tree)
 
 
-def parse_tree(file: PathLike) -> Tree:
+def parse_code_into_tree(code: bytes, file_type: str) -> Tree:
     """
     Parse the tree from the source file.
     """
 
-    file = Path(file)
-
-    match file.suffix:
-        case ".py":
-            return python(file.read_bytes())
+    match file_type:
+        case "py" | "python":
+            return parse_py(code)
         case _:
-            raise NotImplementedError(f"Don't know how to handle {file}.")
+            raise NotImplementedError(f"Don't know how to handle {file_type=}.")
 
 
-def syntax_types_ordered(file: PathLike, tree: Tree) -> list[ParsedSyntax]:
+def parse_syntax_tree(code: bytes, tree: Tree) -> list[ParsedSyntax]:
     """
     Parse the tree sitter `Tree` and convert each into their syntax nodes.
     The nodes are ordered by their occurence in the original source.
     """
 
-    code = Path(file).read_bytes()
     flattened = list(_flatten(tree.walk()))
 
     # This is pre-order traversal, start points must be monotonically increasing.
@@ -79,11 +80,18 @@ def _flatten(cursor: TreeCursor) -> Generator[Node]:
     assert cursor.node
     yield cursor.node
 
-    cursor.goto_first_child()
+    # End the traversal when there is no children.
+    if not cursor.goto_first_child():
+        return
 
-    while cursor.goto_next_sibling():
+    # Do-while loop rather than while because we already entered the first children.
+    while True:
         yield from _flatten(cursor)
 
+        if not cursor.goto_next_sibling():
+            break
+
+    # Exit. Go up.
     cursor.goto_parent()
 
 
@@ -93,5 +101,5 @@ def _parser():
     return Parser(lang)
 
 
-def python(code: bytes) -> Tree:
+def parse_py(code: bytes) -> Tree:
     return _parser().parse(code)
