@@ -4,3 +4,4 @@ from .commits import *
 from .deltas import *
 from .ranges import *
 from .repos import *
+from .syntax import *

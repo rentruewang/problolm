@@ -117,7 +117,7 @@ class Commit:
 
     @property
     def parents(self) -> list[Self]:
-        return [type(self)(sha=p.hexsha) for p in self.git.parents]
+        return [type(self)(sha_like=p.hexsha) for p in self.git.parents]
 
     @property
     def parent(self) -> Self:
