@@ -19,6 +19,8 @@ LOGGER = logging.getLogger(__name__)
 
 @dcls.dataclass(frozen=True)
 class ParsedSyntax:
+    "The syntax in the output."
+
     item: str
     grammar: str
 
@@ -79,10 +81,14 @@ def _flatten(cursor: TreeCursor) -> Generator[Node]:
     assert cursor.node
     yield cursor.node
 
-    cursor.goto_first_child()
+    if not cursor.goto_first_child():
+        return
 
-    while cursor.goto_next_sibling():
+    while True:
         yield from _flatten(cursor)
+
+        if not cursor.goto_next_sibling():
+            break
 
     cursor.goto_parent()
 
