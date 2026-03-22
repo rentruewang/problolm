@@ -42,9 +42,14 @@ class Commit:
 
     __match_args__ = ("short_sha",)
 
-    def __init__(self, sha: str) -> None:
+    def __init__(self, sha_like: str) -> None:
+        """
+        Args:
+            sha_like: Things that can be converted to a sha. e.g. HEAD etc. Parsed by `git`.
+        """
+
         try:
-            self._long_sha = repos.global_repo().commit(sha).hexsha
+            self._long_sha = repos.global_repo().commit(sha_like).hexsha
             "The sha of the commit."
         except BadName as bn:
             raise ValueError from bn
