@@ -43,10 +43,16 @@ def parse_code_into_tree(code: bytes, filename: str | Path) -> Tree:
     Parse the tree from the source file.
     """
 
-    grammar_gen = langs.grammar_for(filename)
-    grammar = grammar_gen()
-    assert isinstance(grammar, Language), type(grammar)
-    parser = Parser(language=grammar)
+    # Get grammar. This requires external tree-sitter-* libraries.
+    try:
+        grammar_gen = langs.grammar_for(filename)
+    except ImportError as ie:
+        raise ImportError(
+            "Import not found. Try installing with `problolm[langs]` extras."
+        ) from ie
+
+    language = Language(grammar_gen())
+    parser = Parser(language=language)
     return parser.parse(code)
 
 

@@ -8,32 +8,21 @@ from enum import StrEnum
 from pathlib import Path
 
 from pygments import lexers
-from tree_sitter import Language, Tree
+from tree_sitter import Tree
 
 __all__ = ["guess_from_filename", "grammar_for", "LangName"]
 
 type LangaugeParser = Callable[[bytes], Tree]
 
 
-def grammar_for(filename: str | Path, /) -> Callable[[], Language]:
+def grammar_for(filename: str | Path, /) -> Callable[[], object]:
     """
     Register a new tree-sitter parser into the global language registry,
     that can be looked up with the specified `aliases`.
     """
 
-    def as_language() -> Language:
-        lang = guess_from_filename(filename)
-
-        try:
-            grammar = _get_grammar_from_lang(lang)
-        except ImportError as ie:
-            raise ImportError(
-                "Import not found. Try installing with `problolm[langs]` extras."
-            )
-
-        return Language(grammar())
-
-    return as_language
+    lang = guess_from_filename(filename)
+    return _get_grammar_from_lang(lang)
 
 
 class LangName(StrEnum):
