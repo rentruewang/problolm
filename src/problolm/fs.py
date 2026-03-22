@@ -9,7 +9,7 @@ import logging
 import typing
 from abc import ABC
 from collections.abc import Generator
-from typing import NamedTuple, Self
+from typing import NamedTuple, NoReturn, Self
 
 from git import Blob, Submodule, Tree
 from rich.tree import Tree as RichTree
@@ -71,6 +71,9 @@ class Folder(TrieNode):
 
     items: dict[str, TrieNode] = dcls.field(default_factory=dict)
 
+    def __contains__(self, obj: str) -> bool:
+        return obj in self.items.keys()
+
     def __rich__(self):
 
         def add_tree(node: TrieNode, tree: RichTree):
@@ -123,8 +126,12 @@ class Folder(TrieNode):
         except KeyError:
             raise ValueError(f"{self!r} / {key} is not presenet.")
 
-    def _get_and_assert_if_present[T](self, key: str, typ: type[T]) -> T | None:
-        if key not in self.items:
+    def guarded_get[T](self, key: str, typ: type[T]) -> T | None:
+        """
+        Do a `get`, but with type guarding.
+        """
+
+        if key not in self:
             return None
 
         result = self.items[key]
@@ -135,9 +142,10 @@ class Folder(TrieNode):
     def add_folder(self, key: str) -> Folder:
         """
         Add a folder to the current folder.
+        If present, fetch the existing folder.
         """
 
-        if folder := self._get_and_assert_if_present(key, Folder):
+        if folder := self.guarded_get(key, Folder):
             return folder
 
         new_node = type(self)(key, parent=self)
@@ -147,9 +155,10 @@ class Folder(TrieNode):
     def add_file(self, key: str, lines: bytes) -> File:
         """
         Add a file to the current folder.
+        If present, fetch the existing file.
         """
 
-        if file := self._get_and_assert_if_present(key, File):
+        if file := self.guarded_get(key, File):
             return file
 
         new_node = File(path=key, data=lines, parent=self)
@@ -263,18 +272,20 @@ def _handle_traversal(file, root: Folder) -> None:
             raise TypeError(type(file))
 
 
-def _handle_tree(tree: Tree, /, root: Folder) -> TrieNode:
+def _handle_tree(tree: Tree, /, root: Folder) -> Folder:
+    LOGGER.debug("Recurse into sub-tree: %s", tree.path)
     pp = _create_parent_path(tree, root=root)
     folder = pp.parent.add_folder(pp.path)
     return folder
 
 
-def _handle_blob(blob: Blob, /, root: Folder):
+def _handle_blob(blob: Blob, /, root: Folder) -> File:
+    LOGGER.debug("Recurse into file: %s", blob.path)
     pp = _create_parent_path(blob, root=root)
     return pp.parent.add_file(pp.path, blob.data_stream.read())
 
 
-def _handle_submodule(submodule: Submodule, /, root: Folder):
+def _handle_submodule(submodule: Submodule, /, root: Folder) -> NoReturn:
     raise NotImplementedError
 
 
