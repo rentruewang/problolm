@@ -99,13 +99,16 @@ class Delta:
         if _HUNK_REGEX.match(line):
             return f"[cyan]{markup.escape(line)}[/cyan]"
 
-        return Syntax(code=markup.escape(line), lexer=self.extension)
+        return self.__highlight(line)
 
     def __split_modifier(self, color: str, modifier: str, rest: str) -> str:
         rest = markup.escape(rest)
-        syntax = Syntax(rest, lexer=self.extension)
-        highlight = str(syntax.highlight(rest))
-        return f"[{color}]{modifier}[/{color}]" + highlight.rstrip("\n")
+        return f"[{color}]{modifier}[/{color}]" + self.__highlight(rest)
+
+    def __highlight(self, code: str):
+        syntax = Syntax(code, lexer=self.extension)
+        highlight = str(syntax.highlight(code))
+        return highlight.rstrip("\n")
 
 
 _ADD_REGEX = re.compile(r"(\+\+\+ |\+)(.*)")
