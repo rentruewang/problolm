@@ -11,7 +11,7 @@ from typing import Any
 from pygments import lexers
 from tree_sitter import Language, Tree
 
-__all__ = ["guess_from_filename", "grammar_for", "SupportedFileType"]
+__all__ = ["guess_from_filename", "grammar_for", "KnownFileType"]
 
 type LangaugeParser = Callable[[bytes], Tree]
 
@@ -27,7 +27,7 @@ def grammar_for(filename: str | Path, /) -> Callable[[], Language]:
     return result
 
 
-class SupportedFileType(StrEnum):
+class KnownFileType(StrEnum):
     PYTHON = "Python"
     CPP = "C++"
     GO = "Go"
@@ -45,10 +45,12 @@ class SupportedFileType(StrEnum):
     PHP = "PHP"
     ELIXIR = "Elixir"
     MAKE = "Makefile"
+    JSON = "JSON"
+    TOML = "TOML"
+    YAML = "YAML"
 
 
-@typing.no_type_check
-def guess_from_filename(filename: str | Path, /) -> SupportedFileType:
+def guess_from_filename(filename: str | Path, /) -> KnownFileType:
     "Guess the given filename as the language."
 
     guess = _guess_from_filename(filename)
@@ -59,26 +61,27 @@ def guess_from_filename(filename: str | Path, /) -> SupportedFileType:
         )
 
     # Go to the above defined types.
-    if guess in SupportedFileType:
-        return SupportedFileType(guess)
+    if guess in KnownFileType:
+        return KnownFileType(guess)
 
-    # Handle some known cases.
+    # Handle some known types we want to handle as another type..
     match guess:
         # Since C++ is compatible with C, and often .h files are C++, we treat C as C++.
         case "C":
-            return SupportedFileType.CPP
+            return KnownFileType.CPP
 
         # TSX is a superset of JSX, and we don't have a JSX parser.
         case "JSX":
-            return SupportedFileType.TSX
+            return KnownFileType.TSX
 
         # I don't know why fortran has fixed vs normal.
         case "FortranFixed":
-            return SupportedFileType.FORTRAN
+            return KnownFileType.FORTRAN
 
-    raise NotImplementedError(f"Don't know how to handle the file type: {guess}")
+    raise NotImplementedError(f"Filetype is not known for '{filename}'.")
 
 
+@typing.no_type_check
 def _guess_from_filename(filename: str | Path, /) -> str | None:
     try:
         lexer = lexers.get_lexer_for_filename(str(filename).lower())
@@ -87,92 +90,107 @@ def _guess_from_filename(filename: str | Path, /) -> str | None:
         return None
 
 
-def _get_grammar_from_lang(file_type: SupportedFileType, /) -> Callable[[], object]:
+def _get_grammar_from_lang(file_type: KnownFileType, /) -> Callable[[], object]:
     match file_type:
-        case SupportedFileType.PYTHON:
+        case KnownFileType.PYTHON:
             import tree_sitter_python
 
             return tree_sitter_python.language
 
-        case SupportedFileType.CPP:
+        case KnownFileType.CPP:
             import tree_sitter_cpp
 
             return tree_sitter_cpp.language
 
-        case SupportedFileType.GO:
+        case KnownFileType.GO:
             import tree_sitter_go
 
             return tree_sitter_go.language
 
-        case SupportedFileType.JS:
+        case KnownFileType.JS:
             import tree_sitter_javascript
 
             return tree_sitter_javascript.language
 
-        case SupportedFileType.TS:
+        case KnownFileType.TS:
             import tree_sitter_typescript
 
             return tree_sitter_typescript.language_typescript
 
-        case SupportedFileType.TSX:
+        case KnownFileType.TSX:
             import tree_sitter_typescript
 
             return tree_sitter_typescript.language_tsx
 
-        case SupportedFileType.JAVA:
+        case KnownFileType.JAVA:
             import tree_sitter_java
 
             return tree_sitter_java.language
 
-        case SupportedFileType.CS:
+        case KnownFileType.CS:
             import tree_sitter_c_sharp
 
             return tree_sitter_c_sharp.language
 
-        case SupportedFileType.FORTRAN:
+        case KnownFileType.FORTRAN:
             import tree_sitter_fortran
 
             return tree_sitter_fortran.language
 
-        case SupportedFileType.RUST:
+        case KnownFileType.RUST:
             import tree_sitter_rust
 
             return tree_sitter_rust.language
 
-        case SupportedFileType.RUBY:
+        case KnownFileType.RUBY:
             import tree_sitter_ruby
 
             return tree_sitter_ruby.language
 
-        case SupportedFileType.HTML:
+        case KnownFileType.HTML:
             import tree_sitter_html
 
             return tree_sitter_html.language
 
-        case SupportedFileType.CSS:
+        case KnownFileType.CSS:
             import tree_sitter_css
 
             return tree_sitter_css.language
 
-        case SupportedFileType.PHP:
+        case KnownFileType.PHP:
             import tree_sitter_php
 
             return tree_sitter_php.language_php
 
-        case SupportedFileType.ELIXIR:
+        case KnownFileType.ELIXIR:
             import tree_sitter_elixir
 
             return tree_sitter_elixir.language
 
-        case SupportedFileType.BASH:
+        case KnownFileType.BASH:
             import tree_sitter_bash
 
             return tree_sitter_bash.language
 
-        case SupportedFileType.MAKE:
+        case KnownFileType.MAKE:
             import tree_sitter_make
 
             return tree_sitter_make.language
+
+        case KnownFileType.JSON:
+            import tree_sitter_json
+
+            return tree_sitter_json.language
+
+        case KnownFileType.TOML:
+            import tree_sitter_toml
+
+            return tree_sitter_toml.language
+
+        case KnownFileType.YAML:
+            import tree_sitter_yaml
+
+            return tree_sitter_yaml.language
 
     # Hint: Hover on the `file_type` and see if it's `Never` type.
     raise NotImplementedError(f"Unreachable! Forgot to handle file type: {file_type}.")
