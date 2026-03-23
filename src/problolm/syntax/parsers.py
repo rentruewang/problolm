@@ -4,14 +4,14 @@
 
 import dataclasses as dcls
 import logging
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from pathlib import Path
-
+import functools
 from tree_sitter import Language, Node, Parser, Point, Tree, TreeCursor
 
 from . import langs
 
-__all__ = ["parse_file_syntax", "parse_code_into_tree"]
+__all__ = ["TreeSitterFileParser", "ParsedSyntax"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +25,58 @@ class ParsedSyntax:
 
     def __repr__(self):
         return f"{{{self.grammar}}} {self.item!r}"
+
+
+@dcls.dataclass(frozen=True)
+class TreeSitterResult:
+    tree: Tree
+    syntax: Sequence[ParsedSyntax]
+
+    def __len__(self) -> int:
+        return len(self.syntax)
+
+    def __getitem__(self, idx: int) -> ParsedSyntax:
+        return self.syntax[idx]
+
+    def __iter__(self) -> Generator[ParsedSyntax]:
+        yield from self.syntax
+
+
+class TreeSitterFileParser:
+    def __init__(self, file: str | Path):
+        self._file = Path(file)
+        self._result: TreeSitterResult | None = None
+
+    def __repr__(self) -> str:
+        return f"TreeSitterParser({self.file})"
+
+    def parse(self) -> TreeSitterResult:
+        if self._result is not None:
+            return self._result
+
+        # Do the work.
+        tree = parse_code_into_tree(code=self.code, filename=self.file)
+        result = parse_syntax_tree(code=self.code, tree=tree)
+        self._result = TreeSitterResult(tree=tree, syntax=result)
+
+        return self._result
+
+    @property
+    def file(self) -> Path:
+        return self._file
+
+    @property
+    def tree(self) -> Tree:
+        return self.result.tree
+
+    @property
+    def result(self) -> TreeSitterResult:
+        assert self._result is not None, f"{self.parse!r} has not been called yet!"
+        return self._result
+
+    @functools.cached_property
+    def code(self) -> bytes:
+        return self.file.read_bytes()
 
 
 def parse_file_syntax(file: str | Path) -> list[ParsedSyntax]:
@@ -62,7 +114,7 @@ def parse_syntax_tree(code: bytes, tree: Tree) -> list[ParsedSyntax]:
     The nodes are ordered by their occurence in the original source.
     """
 
-    flattened = list(_flatten(tree.walk()))
+    flattened = list(flatten(tree))
 
     # This is pre-order traversal, start points must be monotonically increasing.
     start_points = [node.start_point for node in flattened]
@@ -79,6 +131,12 @@ def parse_syntax_tree(code: bytes, tree: Tree) -> list[ParsedSyntax]:
 
 def _cmp_points(first: Point, second: Point) -> int:
     return (first.row - second.row) or (first.column - second.column)
+
+
+def flatten(tree: Tree) -> Generator[Node]:
+    "Flatten the given tree into its internal nodes."
+
+    yield from _flatten(tree.walk())
 
 
 def _flatten(cursor: TreeCursor) -> Generator[Node]:

@@ -5,6 +5,9 @@ from pathlib import Path
 import pytest
 
 import problolm
+from tree_sitter import Tree, Node
+from problolm import TreeSitterFileParser
+from collections.abc import Generator
 
 
 def _cases():
@@ -25,5 +28,19 @@ def case(request) -> Path:
 
 
 def test_parse_case(case) -> None:
-    result = problolm.parse_file_syntax(case)
+    parser = TreeSitterFileParser(case)
+    result = parser.parse()
     assert isinstance(result, list) and all(isinstance(i.grammar, str) for i in result)
+
+
+def _flatten_children(tree: Node) -> Generator[Node]:
+    yield tree
+
+    for child in tree.children:
+        yield from _flatten_children(child)
+
+
+def test_tree_generator(case):
+    parser = TreeSitterFileParser(case)
+    result = parser.parse()
+    assert len(result) == len(list(_flatten_children(result.tree.root_node)))
