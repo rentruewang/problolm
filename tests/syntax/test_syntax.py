@@ -1,13 +1,12 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from tree_sitter import Node
 
-import problolm
-from tree_sitter import Tree, Node
 from problolm import TreeSitterFileParser
-from collections.abc import Generator
 
 
 def _cases():

@@ -3,10 +3,11 @@
 "Parsing the code into syntaxes."
 
 import dataclasses as dcls
+import functools
 import logging
 from collections.abc import Generator, Sequence
 from pathlib import Path
-import functools
+
 from tree_sitter import Language, Node, Parser, Point, Tree, TreeCursor
 
 from . import langs
