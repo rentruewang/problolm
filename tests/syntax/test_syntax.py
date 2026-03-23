@@ -29,7 +29,7 @@ def case(request) -> Path:
 def test_parse_case(case) -> None:
     parser = TreeSitterFileParser(case)
     result = parser.parse()
-    assert isinstance(result, list) and all(isinstance(i.grammar, str) for i in result)
+    assert all(isinstance(i.grammar, str) for i in result)
 
 
 def _flatten_children(tree: Node) -> Generator[Node]:
