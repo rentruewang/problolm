@@ -53,4 +53,4 @@ def test_grammar_for_file(file_lang: FileLang):
 
 @pytest.mark.parametrize("file_lang", file_names_and_types())
 def test_grammar_for_lang(file_lang: FileLang):
-    assert callable(problolm.grammar_for_lang((file_lang.lang)))
+    assert callable(problolm.grammar_for_lang(file_lang.lang))
