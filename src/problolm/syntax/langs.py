@@ -92,13 +92,12 @@ def _guess_from_filename(filename: str | Path, /) -> str | None:
 
 
 def grammar_for_lang(file_type: str | LangName, /) -> Callable[[], object]:
-    if isinstance(file_type, str):
-        try:
-            file_type = _resolve_file_type(file_type)
-        except ValueError as ve:
-            raise ValueError(
-                f"If using a `str` file type, must be keys or values of enum {LangName}"
-            ) from ve
+    try:
+        file_type = _resolve_file_type(file_type)
+    except ValueError as ve:
+        raise ValueError(
+            f"If using a `str` file type, must be keys or values of enum {LangName}"
+        ) from ve
 
     match file_type:
         case LangName.PYTHON:
@@ -210,7 +209,10 @@ def grammar_for_lang(file_type: str | LangName, /) -> Callable[[], object]:
     raise NotImplementedError(f"Unreachable! Forgot to handle file type: {file_type}.")
 
 
-def _resolve_file_type(file_type: str):
+def _resolve_file_type(file_type: str | LangName) -> LangName:
+    if isinstance(file_type, LangName):
+        return file_type
+
     try:
         file_type = LangName(file_type)
         return file_type
