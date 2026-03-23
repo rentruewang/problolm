@@ -10,19 +10,19 @@ from pathlib import Path
 from pygments import lexers
 from tree_sitter import Tree
 
-__all__ = ["guess_from_filename", "grammar_for", "LangName"]
+__all__ = ["guess_from_filename", "grammar_for_file", "LangName", "grammar_for_lang"]
 
 type LangaugeParser = Callable[[bytes], Tree]
 
 
-def grammar_for(filename: str | Path, /) -> Callable[[], object]:
+def grammar_for_file(filename: str | Path, /) -> Callable[[], object]:
     """
     Register a new tree-sitter parser into the global language registry,
     that can be looked up with the specified `aliases`.
     """
 
     lang = guess_from_filename(filename)
-    return _get_grammar_from_lang(lang)
+    return grammar_for_lang(lang)
 
 
 class LangName(StrEnum):
@@ -91,7 +91,10 @@ def _guess_from_filename(filename: str | Path, /) -> str | None:
         return None
 
 
-def _get_grammar_from_lang(file_type: LangName, /) -> Callable[[], object]:
+def grammar_for_lang(file_type: str | LangName, /) -> Callable[[], object]:
+    if isinstance(file_type, str):
+        file_type = LangName(file_type)
+
     match file_type:
         case LangName.PYTHON:
             import tree_sitter_python

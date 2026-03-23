@@ -98,7 +98,7 @@ def parse_code_into_tree(code: bytes, filename: str | Path) -> Tree:
 
     # Get grammar. This requires external tree-sitter-* libraries.
     try:
-        grammar_gen = langs.grammar_for(filename)
+        grammar_gen = langs.grammar_for_file(filename)
     except ImportError as ie:
         raise ImportError(
             "Import not found. Try installing with `problolm[langs]` extras."

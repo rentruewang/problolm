@@ -1,39 +1,56 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
+from typing import NamedTuple
+
 import pytest
 
 import problolm
 
 
+class FileLang(NamedTuple):
+    file: str
+    lang: str
+
+
 def file_names_and_types():
     # Normal.
-    yield "main.py", "Python"
-    yield "app.js", "JavaScript"
-    yield "index.html", "HTML"
-    yield "style.css", "CSS"
-    yield "program.cpp", "C++"
-    yield "script.sh", "Bash"
-    yield "server.go", "Go"
-    yield "docs.md", "Markdown"
+    yield FileLang("main.py", "Python")
+    yield FileLang("app.js", "JavaScript")
+    yield FileLang("index.html", "HTML")
+    yield FileLang("style.css", "CSS")
+    yield FileLang("program.cpp", "C++")
+    yield FileLang("script.sh", "Bash")
+    yield FileLang("server.go", "Go")
+    yield FileLang("docs.md", "Markdown")
 
     # Upper case.
-    yield "MAIN.PY", "Python"
-    yield "App.Js", "JavaScript"
-    yield "Index.HTML", "HTML"
+    yield FileLang("MAIN.PY", "Python")
+    yield FileLang("App.Js", "JavaScript")
+    yield FileLang("Index.HTML", "HTML")
 
     # No extension.
-    yield "Makefile", "Makefile"
-    yield ".bashrc", "Bash"
+    yield FileLang("Makefile", "Makefile")
+    yield FileLang(".bashrc", "Bash")
 
     # Multiple dots
-    yield "app.test.js", "JavaScript"
-    yield "component.spec.ts", "TypeScript"
+    yield FileLang("app.test.js", "JavaScript")
+    yield FileLang("component.spec.ts", "TypeScript")
 
     # Unicodes.
-    yield "你好.py", "Python"
-    yield "файл.js", "JavaScript"
+    yield FileLang("你好.py", "Python")
+    yield FileLang("файл.js", "JavaScript")
 
 
 @pytest.mark.parametrize("fname, ftype", file_names_and_types())
 def test_guess_file_type(fname: str, ftype: str):
     assert problolm.guess_from_filename(fname) == ftype
+
+
+@pytest.mark.parametrize("file_lang", file_names_and_types())
+def test_grammar_for_file(file_lang: FileLang):
+    assert callable(problolm.grammar_for_file(file_lang.file))
+
+
+@pytest.mark.parametrize("file_lang", file_names_and_types())
+def test_grammar_for_lang(file_lang: FileLang):
+    assert callable(problolm.grammar_for_lang((file_lang.lang)))
