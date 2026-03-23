@@ -1,10 +1,12 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from tree_sitter import Node
 
-import problolm
+from problolm import TreeSitterFileParser
 
 
 def _cases():
@@ -25,5 +27,19 @@ def case(request) -> Path:
 
 
 def test_parse_case(case) -> None:
-    result = problolm.parse_file_syntax(case)
-    assert isinstance(result, list) and all(isinstance(i.grammar, str) for i in result)
+    parser = TreeSitterFileParser(case)
+    result = parser.parse()
+    assert all(isinstance(i.grammar, str) for i in result)
+
+
+def _flatten_children(tree: Node) -> Generator[Node]:
+    yield tree
+
+    for child in tree.children:
+        yield from _flatten_children(child)
+
+
+def test_tree_generator(case):
+    parser = TreeSitterFileParser(case)
+    result = parser.parse()
+    assert len(result) == len(list(_flatten_children(result.tree.root_node)))
