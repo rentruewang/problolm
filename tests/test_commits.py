@@ -1,10 +1,11 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
 from pathlib import Path
+
 import pytest
 
-from problolm import Commit, CommitRange
 import problolm
+from problolm import Commit, CommitRange
 
 
 @pytest.fixture(scope="module", autouse=True)
