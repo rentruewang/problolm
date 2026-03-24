@@ -6,7 +6,7 @@ import dataclasses as dcls
 import logging
 
 from .commits import Commit
-from .diffs import Delta
+from .deltas import Delta
 
 __all__ = ["CommitRange"]
 
