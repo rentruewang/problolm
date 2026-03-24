@@ -16,6 +16,10 @@ __all__ = ["repo", "set_git_repo", "working_git_repo"]
 LOGGER = logging.getLogger(__name__)
 
 
+_current_git_repo: Repo | None = None
+"The global default repo."
+
+
 def repo(folder: str | Path = "."):
     """
     Find the git repo that the repository is located.
@@ -81,7 +85,3 @@ if __name__ == "__main__":
 
     args = parse_args()
     print(repo(args.path))
-
-
-_current_git_repo: Repo | None = None
-"The global default repo."
