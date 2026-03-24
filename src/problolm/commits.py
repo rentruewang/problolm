@@ -49,7 +49,7 @@ class Commit:
         """
 
         try:
-            self._long_sha = repos.global_repo().commit(sha_like).hexsha
+            self._long_sha = repos.working_git_repo().commit(sha_like).hexsha
             "The sha of the commit."
         except BadName as bn:
             raise ValueError from bn
@@ -100,7 +100,7 @@ class Commit:
 
     @property
     def git(self):
-        commit = repos.global_repo().commit(str(self.sha))
+        commit = repos.working_git_repo().commit(str(self.sha))
         assert self == commit.hexsha
         return commit
 
@@ -213,7 +213,7 @@ class Commit:
 
 def head_commit() -> Commit:
     "Get the commit at the HEAD."
-    return Commit(repos.global_repo().head.commit.hexsha)
+    return Commit(repos.working_git_repo().head.commit.hexsha)
 
 
 def git_show_cmd() -> None:

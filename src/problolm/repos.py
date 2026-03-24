@@ -2,6 +2,7 @@
 
 "Get the repo."
 
+import contextlib as ctxl
 import logging
 import typing
 from argparse import ArgumentParser
@@ -10,7 +11,7 @@ from typing import Protocol
 
 from git import Repo
 
-__all__ = ["repo", "set_global_repo", "global_repo"]
+__all__ = ["repo", "set_git_repo", "working_git_repo"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,19 +32,27 @@ def repo(folder: str | Path = "."):
     raise FileNotFoundError("Cannot find git directory from")
 
 
-def global_repo() -> Repo:
-    if REPO is not None:
-        return REPO
+def working_git_repo() -> Repo:
+    "The repo that we are currently working on."
+    if _current_git_repo is not None:
+        return _current_git_repo
 
-    raise RuntimeError("You must call `set_global_repo` first!")
+    raise RuntimeError("You must use `set_git_repo` context manager!")
 
 
-def set_global_repo(path: str | Path) -> None:
-    "Set the global default repo to the path."
+@ctxl.contextmanager
+def set_git_repo(path: str | Path | Repo):
+    "Context manager to set the git repo to the target."
 
-    global REPO
+    global _current_git_repo
 
-    REPO = repo(path)
+    original = _current_git_repo
+
+    try:
+        _current_git_repo = repo(path) if not isinstance(path, Repo) else path
+        yield
+    finally:
+        _current_git_repo = original
 
 
 def _yield_parents_until_root(folder: str | Path):
@@ -74,5 +83,5 @@ if __name__ == "__main__":
     print(repo(args.path))
 
 
-REPO: Repo = repo(".")
+_current_git_repo: Repo | None = None
 "The global default repo."
