@@ -14,7 +14,7 @@ from typing import NamedTuple, NoReturn, Self
 from git import Blob, Submodule, Tree
 from rich.tree import Tree as RichTree
 
-__all__ = ["TrieNode"]
+__all__ = ["TrieNode", "Folder", "File"]
 
 LOGGER = logging.getLogger(__name__)
 
