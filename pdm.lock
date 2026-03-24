@@ -5,7 +5,7 @@
 groups = ["default", "dev", "jupyter", "langs", "pytest"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:0f169f0702f951a2812c48fd84949b0e678daf7b9b358292c58551ad449c3a30"
+content_hash = "sha256:700de1772d1a0b54103799ff879618c1b44d9103e88f30c2b77d13465847dba4"
 
 [[metadata.targets]]
 requires_python = ">=3.14,<3.15"
@@ -202,6 +202,31 @@ dependencies = [
 files = [
     {file = "beautifulsoup4-4.14.3-py3-none-any.whl", hash = "sha256:0918bfe44902e6ad8d57732ba310582e98da931428d231a5ecb9e7c703a735bb"},
     {file = "beautifulsoup4-4.14.3.tar.gz", hash = "sha256:6292b1c5186d356bba669ef9f7f051757099565ad9ada5dd630bd9de5fa7fb86"},
+]
+
+[[package]]
+name = "biopython"
+version = "1.86"
+requires_python = ">=3.10"
+summary = "Freely available tools for computational molecular biology."
+groups = ["default"]
+dependencies = [
+    "numpy",
+]
+files = [
+    {file = "biopython-1.86-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:236ca61aa996f12cbc65a8d6a15abfac70b9ee800656629b784c6a240e7d8dc0"},
+    {file = "biopython-1.86-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:f96b7441f456c7eecad5c6e61e75b0db1435c489be7cc5e4f97dd4e60921747c"},
+    {file = "biopython-1.86-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:d53a78bf960397826219f08f87b061ad7f227527d19986e830eeab60d370b597"},
+    {file = "biopython-1.86-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bb86e4383c02fdb2571a38947153346e6f5cd38e22de1df40f54d2a3c51d02a8"},
+    {file = "biopython-1.86-cp314-cp314-win32.whl", hash = "sha256:ffeba620c4786ea836efee235a9c6333b94e922b89de1449a4782dcc15246ff1"},
+    {file = "biopython-1.86-cp314-cp314-win_amd64.whl", hash = "sha256:efbb9bc4415a1e2c1c986ba261b02857bc0c9eed098b15493f1cc5c4a1e02409"},
+    {file = "biopython-1.86-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:caa70c1639b3306549605f9273753bdbf8cd6d6d352cecf23afbda3c911694f3"},
+    {file = "biopython-1.86-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:d077f01d1f69f77a26cac46163d4ea45eb4e6509a68feb7f15e665b7e1de0a99"},
+    {file = "biopython-1.86-cp314-cp314t-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4506ce7dbdf885cb24d1f5439362c3c07f1b6f90761a0d20fe16a2a9ea5702a5"},
+    {file = "biopython-1.86-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:dcd94717e83ba891ebd9acaecbf05ad38313095ca5706caf6c38fa3f2aa17528"},
+    {file = "biopython-1.86-cp314-cp314t-win32.whl", hash = "sha256:2f6b205dcb4101cefa5c615114bd35a19f656abb9d340eb3cf190f829e43800a"},
+    {file = "biopython-1.86-cp314-cp314t-win_amd64.whl", hash = "sha256:efeee7c37f2331d2c55704df39e122189cc237ffd7511f34158418ad728131b8"},
+    {file = "biopython-1.86.tar.gz", hash = "sha256:93a50b586a4d2cec68ab2f99d03ef583c5761d8fba5535cb8e81da781d0d92ff"},
 ]
 
 [[package]]
