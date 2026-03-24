@@ -2,9 +2,6 @@
 
 "The global default repo. Since `problolm` will only work on 1 repo, it's global."
 
-from git.repo.base import Repo
-
-
 import contextlib as ctxl
 import logging
 import re
@@ -17,6 +14,7 @@ from pathlib import Path
 from typing import Protocol
 
 from git import Repo
+from git.repo.base import Repo
 
 __all__ = ["init_repo", "set_git_repo", "working_git_repo"]
 

@@ -5,15 +5,10 @@
 import dataclasses as dcls
 from collections.abc import Generator, Sequence
 from difflib import SequenceMatcher
-from pickletools import OpcodeInfo
-from urllib.parse import non_hierarchical
-
-from _pytest._code.code import Code
-import numpy as np
-
-from numpy.testing import assert_raises_regex
-from numpy.typing import NDArray
 from enum import StrEnum
+
+import numpy as np
+from numpy.typing import NDArray
 
 __all__ = ["unified_diff", "DnaDiffer"]
 
@@ -27,21 +22,36 @@ class OpCode(StrEnum):
 
 @dcls.dataclass(frozen=True)
 class LineRange:
+    "The line range of a string."
+
     start: int
     finish: int
 
     def __post_init__(self) -> None:
+        assert self.start >= 0
+        assert self.finish >= 0
         assert self.start <= self.finish
 
     def __len__(self) -> int:
         return self.finish - self.start
 
-    def slice(self):
-        return slice(self.start, self.finish, 1)
+    def slice(self, text: Sequence[str]):
+        assert self.finish < len(text)
+        idx = slice(self.start, self.finish)
+        return text[idx]
 
 
 @dcls.dataclass(frozen=True)
 class Op:
+    """
+    `Op` is an easier to work with representation of `get_opcodes()` output.
+
+    It replaces the 5-tuples with 3 objects:
+
+    `OpCode` enum to show the op.
+    Source lines and target lines for easier slicing and validation.
+    """
+
     code: OpCode
     source: LineRange
     target: LineRange
@@ -68,8 +78,8 @@ class Op:
                 pass
 
     def render(self, left: Sequence[str], right: Sequence[str]) -> Generator[str]:
-        left = left[self.source.slice()]
-        right = right[self.target.slice()]
+        left = self.source.slice(left)
+        right = self.target.slice(right)
 
         match self.code:
             case OpCode.DELETE:
@@ -96,6 +106,10 @@ class Op:
 
 
 def difflib_diff(a: Sequence[str], b: Sequence[str]) -> Generator[Op]:
+    """
+    Yields a generator of `Op`.
+    """
+
     matcher = SequenceMatcher(None, a, b)
 
     for code, i1, i2, j1, j2 in matcher.get_opcodes():
