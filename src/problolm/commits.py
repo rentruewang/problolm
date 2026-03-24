@@ -6,6 +6,7 @@ import contextlib as ctxl
 import functools
 import logging
 import typing
+from collections.abc import Generator
 from enum import StrEnum
 from enum import auto as Auto
 from typing import Self
@@ -13,6 +14,8 @@ from typing import Self
 import fire
 import rich
 from git import BadName
+
+from problolm.fs import File
 
 from . import repos
 
@@ -94,7 +97,7 @@ class Commit:
 
         return NotImplemented
 
-    def list_files(self):
+    def list_files(self) -> Generator[File]:
         file_system = self.fs()
         yield from file_system.list_files()
 
