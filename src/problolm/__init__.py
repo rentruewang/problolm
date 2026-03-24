@@ -1,8 +1,5 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-from .commits import *
-from .deltas import *
 from .diffs import *
-from .ranges import *
-from .repos import *
+from .git import *
 from .syntax import *

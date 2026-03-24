@@ -11,7 +11,8 @@ from typing import NoReturn
 from rich import markup
 from rich.syntax import Syntax
 
-from . import diffs
+from problolm import diffs
+
 from .commits import Commit
 from .fs import File, Folder, TrieNode
 
