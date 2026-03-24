@@ -124,7 +124,7 @@ class Folder(TrieNode):
         try:
             return self.items[key]
         except KeyError:
-            raise ValueError(f"{self!r} / {key} is not presenet.")
+            raise ValueError(f"{self!r} / {key} is not present.")
 
     def guarded_get[T](self, key: str, typ: type[T]) -> T | None:
         """

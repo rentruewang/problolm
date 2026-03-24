@@ -43,7 +43,7 @@ def differ():
 def test_equal(case_1_grammar: list[str], differ: DnaDiffer):
     result = differ.align(case_1_grammar, case_1_grammar)
     diffs = list(
-        problolm.normal_diff(
+        problolm.unified_diff(
             result.left, result.right, fromfile="case_1", tofile="case_1"
         )
     )
@@ -56,7 +56,7 @@ def test_not_equal(
 ):
     result = differ.align(case_1_grammar, case_2_grammar)
     diffs = list(
-        problolm.normal_diff(
+        problolm.unified_diff(
             result.left, result.right, fromfile="case_1", tofile="case_2"
         )
     )

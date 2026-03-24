@@ -222,8 +222,9 @@ def git_show_cmd() -> None:
     "The show command that is exposed publically via [project.scripts]."
 
     def show(sha: str = ""):
-        commit = Commit(sha) if sha else head_commit()
-        commit.show()
+        with repos.set_git_repo("."):
+            commit = Commit(sha) if sha else head_commit()
+            commit.show()
 
     fire.Fire(show)
 

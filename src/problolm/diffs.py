@@ -3,32 +3,130 @@
 "The diff information."
 
 import dataclasses as dcls
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from difflib import SequenceMatcher
+from pickletools import OpcodeInfo
+from urllib.parse import non_hierarchical
 
+from _pytest._code.code import Code
 import numpy as np
+
+from numpy.testing import assert_raises_regex
 from numpy.typing import NDArray
+from enum import StrEnum
 
-__all__ = ["normal_diff", "DnaDiffer"]
+__all__ = ["unified_diff", "DnaDiffer"]
 
 
-def normal_diff(a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str):
+class OpCode(StrEnum):
+    REPLACE = "replace"
+    DELETE = "delete"
+    INSERT = "insert"
+    EQUAL = "equal"
+
+
+@dcls.dataclass(frozen=True)
+class LineRange:
+    start: int
+    finish: int
+
+    def __post_init__(self) -> None:
+        assert self.start <= self.finish
+
+    def __len__(self) -> int:
+        return self.finish - self.start
+
+    def slice(self):
+        return slice(self.start, self.finish, 1)
+
+
+@dcls.dataclass(frozen=True)
+class Op:
+    code: OpCode
+    source: LineRange
+    target: LineRange
+
+    def __post_init__(self) -> None:
+        match self.code:
+            # len(lhs) = len(rhs).
+            case OpCode.EQUAL:
+                if len(self.source) != len(self.target):
+                    raise ValueError(f"{self.code=} but {self.source=}, {self.target=}")
+
+            # len(rhs) = 0.
+            case OpCode.DELETE:
+                if len(self.target):
+                    raise ValueError(f"{self.code=} but {self.target=}.")
+
+            # len(lhs) = 0.
+            case OpCode.INSERT:
+                if len(self.source):
+                    raise ValueError(f"{self.code=} but {self.source=}.")
+
+            # Nothing.
+            case OpCode.REPLACE:
+                pass
+
+    def render(self, left: Sequence[str], right: Sequence[str]) -> Generator[str]:
+        left = left[self.source.slice()]
+        right = right[self.target.slice()]
+
+        match self.code:
+            case OpCode.DELETE:
+                yield self._hunk()
+                yield from _render_delete(left)
+            case OpCode.INSERT:
+                yield self._hunk()
+                yield from _render_insert(right)
+            case OpCode.REPLACE:
+                yield self._hunk()
+                yield from _render_delete(left)
+                yield from _render_insert(right)
+            case OpCode.EQUAL:
+                return
+                yield
+
+    def _hunk(self):
+        return _gen_hunk(
+            self.source.start,
+            self.source.finish,
+            self.target.start,
+            self.target.finish,
+        )
+
+
+def difflib_diff(a: Sequence[str], b: Sequence[str]) -> Generator[Op]:
     matcher = SequenceMatcher(None, a, b)
+
+    for code, i1, i2, j1, j2 in matcher.get_opcodes():
+        yield Op(
+            code=OpCode(code),
+            source=LineRange(i1, i2),
+            target=LineRange(j1, j2),
+        )
+
+
+def unified_diff(a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str):
+    diff = difflib_diff(a, b)
+
     yield f"--- {fromfile}"
     yield f"+++ {tofile}"
 
-    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        if tag == "equal":
-            continue
+    for op in diff:
+        rendered = list(op.render(a, b))
 
-        yield ""
-        yield _gen_hunk(i1, i2, j1, j2)
+        if rendered:
+            yield from rendered
 
-        for line in a[i1:i2]:
-            yield f"-{line}"
 
-        for line in b[j1:j2]:
-            yield f"+{line}"
+def _render_delete(lines: Sequence[str]):
+    for l in lines:
+        yield "-" + l
+
+
+def _render_insert(lines: Sequence[str]):
+    for l in lines:
+        yield "+" + l
 
 
 def _gen_hunk(i1: int, i2: int, j1: int, j2: int) -> str:
