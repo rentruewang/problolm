@@ -24,9 +24,11 @@ _current_git_repo: Repo | None = None
 "The global default repo."
 
 
-def init_repo(loc: str = "."):
+def init_repo(loc: str = ".") -> Repo:
     """
     Find the git repo that the repository is located.
+
+    Note that this may perform a clone and is thus expensive.
     """
 
     # Local path.
