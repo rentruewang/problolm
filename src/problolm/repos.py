@@ -5,13 +5,14 @@
 import contextlib as ctxl
 import logging
 import re
+import tempfile
 import typing
 from argparse import ArgumentParser
 from collections.abc import Generator
+from datetime import datetime as DateTime
 from pathlib import Path
 from typing import Protocol
-from urllib import parse
-import tempfile
+
 from git import Repo
 
 __all__ = ["repo", "set_git_repo", "working_git_repo"]
@@ -35,11 +36,10 @@ def repo(loc: str = "."):
         LOGGER.info("%s does not exist locally.")
 
     # Remote path.
-    if m := _GIT_URL.match(loc):
-        repo_and_host = m.groups()[-1]
-        assert isinstance(repo_and_host, str)
-        repo_name = repo_and_host.split("/")[-1]
-        return Repo.clone_from(loc, Path(tempfile.gettempdir()) / repo_name)
+    try:
+        return _try_clone_remote_repo(loc)
+    except Exception:
+        LOGGER.info("%s is not a remote git url.")
 
     raise ValueError(
         f"We cannot handle {loc=}! Must be either a URL or exists on local folder."
@@ -48,6 +48,20 @@ def repo(loc: str = "."):
 
 _GIT_URL = re.compile(r"(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)")
 "Adapted from https://stackoverflow.com/a/2514986"
+
+
+def _try_clone_remote_repo(url: str):
+    "Try cloning remote repo. Raise error if fail."
+    if not (m := _GIT_URL.match(url)):
+        raise RuntimeError
+
+    repo_and_host = m.groups()[-1]
+    assert isinstance(repo_and_host, str)
+    repo_name = repo_and_host.split("/")[-1]
+
+    # Repeated cloning might fail. This way it only fails in 1s window.
+    now = DateTime.now().strftime("%Y-%M-%d-%H-%m-%S")
+    return Repo.clone_from(url, Path(tempfile.gettempdir()) / f"{repo_name}-{now}")
 
 
 def _local_repo(folder: str) -> Repo:
