@@ -77,7 +77,7 @@ class Delta:
         return "\n".join(self.maybe_color_line_diffs(color=rich))
 
     def maybe_color_line_diffs(self, color: bool):
-        text = diffs.unified_diff_from_seq(
+        text = diffs.normal_diff(
             a=self._older_text(),
             b=self._newer_text(),
             fromfile=self.older_path or "",
