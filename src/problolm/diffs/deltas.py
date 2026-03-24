@@ -12,10 +12,8 @@ from typing import NoReturn
 from rich import markup
 from rich.syntax import Syntax
 
-from problolm.fs import File, Folder
-
-from .commits import Commit
-from .fs import TrieNode
+from problolm.commits import Commit
+from problolm.fs import File, Folder, TrieNode
 
 __all__ = ["Delta"]
 
