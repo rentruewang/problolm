@@ -40,7 +40,7 @@ class CommitType(StrEnum):
 class Commit:
     "The object for the commits."
 
-    __match_args__ = ("short_sha",)
+    __match_args__ = ("sha",)
 
     def __init__(self, sha_like: str) -> None:
         """
