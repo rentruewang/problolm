@@ -3,32 +3,153 @@
 "The diff information."
 
 import dataclasses as dcls
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from difflib import SequenceMatcher
+from enum import StrEnum
 
 import numpy as np
 from numpy.typing import NDArray
 
-__all__ = ["normal_diff", "DnaDiffer"]
+__all__ = [
+    "unified_diff",
+    "difflib_diff",
+    "DiffOp",
+    "DiffOpCode",
+    "LineRange",
+    "DnaDiffer",
+]
 
 
-def normal_diff(a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str):
+class DiffOpCode(StrEnum):
+    "All the possibilities of output of `difflib`."
+
+    REPLACE = "replace"
+    DELETE = "delete"
+    INSERT = "insert"
+    EQUAL = "equal"
+
+
+@dcls.dataclass(frozen=True)
+class LineRange:
+    "The line range of a string."
+
+    start: int
+    finish: int
+
+    def __post_init__(self) -> None:
+        assert self.start >= 0
+        assert self.finish >= 0
+        assert self.start <= self.finish
+
+    def __len__(self) -> int:
+        return self.finish - self.start
+
+    def slice(self, text: Sequence[str]):
+        assert self.finish < len(text)
+        idx = slice(self.start, self.finish)
+        return text[idx]
+
+
+@dcls.dataclass(frozen=True)
+class DiffOp:
+    """
+    `DiffOp` is an easier to work with representation of `get_opcodes()` output.
+
+    It replaces the 5-tuples with 3 objects:
+
+    `OpCode` enum to show the op.
+    Source lines and target lines for easier slicing and validation.
+    """
+
+    code: DiffOpCode
+    source: LineRange
+    target: LineRange
+
+    def __post_init__(self) -> None:
+        match self.code:
+            # len(lhs) = len(rhs).
+            case DiffOpCode.EQUAL:
+                if len(self.source) != len(self.target):
+                    raise ValueError(f"{self.code=} but {self.source=}, {self.target=}")
+
+            # len(rhs) = 0.
+            case DiffOpCode.DELETE:
+                if len(self.target):
+                    raise ValueError(f"{self.code=} but {self.target=}.")
+
+            # len(lhs) = 0.
+            case DiffOpCode.INSERT:
+                if len(self.source):
+                    raise ValueError(f"{self.code=} but {self.source=}.")
+
+            # Nothing.
+            case DiffOpCode.REPLACE:
+                pass
+
+    def render(self, left: Sequence[str], right: Sequence[str]) -> Generator[str]:
+        left = self.source.slice(left)
+        right = self.target.slice(right)
+
+        match self.code:
+            case DiffOpCode.DELETE:
+                yield self._hunk()
+                yield from _render_delete(left)
+            case DiffOpCode.INSERT:
+                yield self._hunk()
+                yield from _render_insert(right)
+            case DiffOpCode.REPLACE:
+                yield self._hunk()
+                yield from _render_delete(left)
+                yield from _render_insert(right)
+            case DiffOpCode.EQUAL:
+                return
+                yield
+
+    def _hunk(self):
+        return _gen_hunk(
+            self.source.start,
+            self.source.finish,
+            self.target.start,
+            self.target.finish,
+        )
+
+
+def difflib_diff(a: Sequence[str], b: Sequence[str]) -> Generator[DiffOp]:
+    """
+    Yields a generator of `DiffOp`.
+    """
+
     matcher = SequenceMatcher(None, a, b)
+
+    for code, i1, i2, j1, j2 in matcher.get_opcodes():
+        yield DiffOp(
+            code=DiffOpCode(code),
+            source=LineRange(i1, i2),
+            target=LineRange(j1, j2),
+        )
+
+
+def unified_diff(a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str):
+    diff = difflib_diff(a, b)
+
     yield f"--- {fromfile}"
     yield f"+++ {tofile}"
 
-    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        if tag == "equal":
-            continue
+    for op in diff:
+        rendered = list(op.render(a, b))
 
-        yield ""
-        yield _gen_hunk(i1, i2, j1, j2)
+        if rendered:
+            yield from rendered
 
-        for line in a[i1:i2]:
-            yield f"-{line}"
 
-        for line in b[j1:j2]:
-            yield f"+{line}"
+def _render_delete(lines: Sequence[str]):
+    for l in lines:
+        yield "-" + l
+
+
+def _render_insert(lines: Sequence[str]):
+    for l in lines:
+        yield "+" + l
 
 
 def _gen_hunk(i1: int, i2: int, j1: int, j2: int) -> str:

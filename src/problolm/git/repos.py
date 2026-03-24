@@ -14,8 +14,9 @@ from pathlib import Path
 from typing import Protocol
 
 from git import Repo
+from git.repo.base import Repo
 
-__all__ = ["init_repo", "set_git_repo", "working_git_repo"]
+__all__ = ["init_repo", "set_git_repo", "working_git_repo", "RepoIsDirty"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,12 +25,26 @@ _current_git_repo: Repo | None = None
 "The global default repo."
 
 
+class RepoIsDirty(NotImplementedError):
+    "Dirty repo is not yet handled."
+
+
 def init_repo(loc: str = ".") -> Repo:
     """
     Find the git repo that the repository is located.
 
     Note that this may perform a clone and is thus expensive.
     """
+
+    repo = _init_repo(loc=loc)
+
+    if repo.is_dirty():
+        raise RepoIsDirty("You have un-committed changes. This may cause problems.")
+
+    return repo
+
+
+def _init_repo(loc: str) -> Repo:
 
     # Local path.
     if Path(loc).exists():

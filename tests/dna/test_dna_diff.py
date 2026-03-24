@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 import problolm
-from problolm import DnaDiffer, TreeSitterFileParser
+from problolm import DiffOpCode, DnaDiffer, TreeSitterFileParser
 
 
 @pytest.fixture(scope="module")
@@ -42,23 +42,15 @@ def differ():
 
 def test_equal(case_1_grammar: list[str], differ: DnaDiffer):
     result = differ.align(case_1_grammar, case_1_grammar)
-    diffs = list(
-        problolm.normal_diff(
-            result.left, result.right, fromfile="case_1", tofile="case_1"
-        )
-    )
-
-    assert diffs == ["--- case_1", "+++ case_1"]
+    diffs = list(problolm.difflib_diff(result.left, result.right))
+    assert all(diff.code == DiffOpCode.EQUAL for diff in diffs)
 
 
 def test_not_equal(
     case_1_grammar: list[str], case_2_grammar: list[str], differ: DnaDiffer
 ):
     result = differ.align(case_1_grammar, case_2_grammar)
-    diffs = list(
-        problolm.normal_diff(
-            result.left, result.right, fromfile="case_1", tofile="case_2"
-        )
-    )
-    assert diffs[:2] == ["--- case_1", "+++ case_2"]
-    assert len(diffs[2:]) > 0
+    diffs = list(problolm.difflib_diff(result.left, result.right))
+
+    assert len(diffs) > 0
+    assert not all(diff.code == DiffOpCode.EQUAL for diff in diffs)
