@@ -10,10 +10,19 @@ from enum import StrEnum
 import numpy as np
 from numpy.typing import NDArray
 
-__all__ = ["unified_diff", "DnaDiffer"]
+__all__ = [
+    "unified_diff",
+    "difflib_diff",
+    "DiffOp",
+    "DiffOpCode",
+    "LineRange",
+    "DnaDiffer",
+]
 
 
-class OpCode(StrEnum):
+class DiffOpCode(StrEnum):
+    "All the possibilities of output of `difflib`."
+
     REPLACE = "replace"
     DELETE = "delete"
     INSERT = "insert"
@@ -42,9 +51,9 @@ class LineRange:
 
 
 @dcls.dataclass(frozen=True)
-class Op:
+class DiffOp:
     """
-    `Op` is an easier to work with representation of `get_opcodes()` output.
+    `DiffOp` is an easier to work with representation of `get_opcodes()` output.
 
     It replaces the 5-tuples with 3 objects:
 
@@ -52,29 +61,29 @@ class Op:
     Source lines and target lines for easier slicing and validation.
     """
 
-    code: OpCode
+    code: DiffOpCode
     source: LineRange
     target: LineRange
 
     def __post_init__(self) -> None:
         match self.code:
             # len(lhs) = len(rhs).
-            case OpCode.EQUAL:
+            case DiffOpCode.EQUAL:
                 if len(self.source) != len(self.target):
                     raise ValueError(f"{self.code=} but {self.source=}, {self.target=}")
 
             # len(rhs) = 0.
-            case OpCode.DELETE:
+            case DiffOpCode.DELETE:
                 if len(self.target):
                     raise ValueError(f"{self.code=} but {self.target=}.")
 
             # len(lhs) = 0.
-            case OpCode.INSERT:
+            case DiffOpCode.INSERT:
                 if len(self.source):
                     raise ValueError(f"{self.code=} but {self.source=}.")
 
             # Nothing.
-            case OpCode.REPLACE:
+            case DiffOpCode.REPLACE:
                 pass
 
     def render(self, left: Sequence[str], right: Sequence[str]) -> Generator[str]:
@@ -82,17 +91,17 @@ class Op:
         right = self.target.slice(right)
 
         match self.code:
-            case OpCode.DELETE:
+            case DiffOpCode.DELETE:
                 yield self._hunk()
                 yield from _render_delete(left)
-            case OpCode.INSERT:
+            case DiffOpCode.INSERT:
                 yield self._hunk()
                 yield from _render_insert(right)
-            case OpCode.REPLACE:
+            case DiffOpCode.REPLACE:
                 yield self._hunk()
                 yield from _render_delete(left)
                 yield from _render_insert(right)
-            case OpCode.EQUAL:
+            case DiffOpCode.EQUAL:
                 return
                 yield
 
@@ -105,16 +114,16 @@ class Op:
         )
 
 
-def difflib_diff(a: Sequence[str], b: Sequence[str]) -> Generator[Op]:
+def difflib_diff(a: Sequence[str], b: Sequence[str]) -> Generator[DiffOp]:
     """
-    Yields a generator of `Op`.
+    Yields a generator of `DiffOp`.
     """
 
     matcher = SequenceMatcher(None, a, b)
 
     for code, i1, i2, j1, j2 in matcher.get_opcodes():
-        yield Op(
-            code=OpCode(code),
+        yield DiffOp(
+            code=DiffOpCode(code),
             source=LineRange(i1, i2),
             target=LineRange(j1, j2),
         )
