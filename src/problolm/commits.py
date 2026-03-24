@@ -52,7 +52,7 @@ class Commit:
         """
 
         try:
-            self._long_sha = repos.working_git_repo().commit(sha_like).hexsha
+            self._long_sha: str = repos.working_git_repo().commit(sha_like).hexsha
             "The sha of the commit."
         except BadName as bn:
             raise ValueError from bn
