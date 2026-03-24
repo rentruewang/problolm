@@ -15,7 +15,7 @@ from typing import Protocol
 
 from git import Repo
 
-__all__ = ["repo", "set_git_repo", "working_git_repo"]
+__all__ = ["init_repo", "set_git_repo", "working_git_repo"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ _current_git_repo: Repo | None = None
 "The global default repo."
 
 
-def repo(loc: str = "."):
+def init_repo(loc: str = "."):
     """
     Find the git repo that the repository is located.
     """
@@ -95,7 +95,7 @@ def set_git_repo(path: str | Repo):
     original = _current_git_repo
 
     try:
-        _current_git_repo = repo(path) if not isinstance(path, Repo) else path
+        _current_git_repo = init_repo(path) if not isinstance(path, Repo) else path
         yield
     finally:
         _current_git_repo = original
@@ -126,4 +126,4 @@ if __name__ == "__main__":
         return parser.parse_args()
 
     args = parse_args()
-    print(repo(args.path))
+    print(init_repo(args.path))
