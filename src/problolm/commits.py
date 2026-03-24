@@ -6,6 +6,7 @@ import contextlib as ctxl
 import functools
 import logging
 import typing
+from collections.abc import Generator
 from enum import StrEnum
 from enum import auto as Auto
 from typing import Self
@@ -13,6 +14,8 @@ from typing import Self
 import fire
 import rich
 from git import BadName
+
+from problolm.fs import File
 
 from . import repos
 
@@ -40,7 +43,7 @@ class CommitType(StrEnum):
 class Commit:
     "The object for the commits."
 
-    __match_args__ = ("short_sha",)
+    __match_args__ = ("sha",)
 
     def __init__(self, sha_like: str) -> None:
         """
@@ -49,7 +52,7 @@ class Commit:
         """
 
         try:
-            self._long_sha = repos.global_repo().commit(sha_like).hexsha
+            self._long_sha: str = repos.working_git_repo().commit(sha_like).hexsha
             "The sha of the commit."
         except BadName as bn:
             raise ValueError from bn
@@ -94,13 +97,13 @@ class Commit:
 
         return NotImplemented
 
-    def list_files(self):
+    def list_files(self) -> Generator[File]:
         file_system = self.fs()
         yield from file_system.list_files()
 
     @property
     def git(self):
-        commit = repos.global_repo().commit(str(self.sha))
+        commit = repos.working_git_repo().commit(str(self.sha))
         assert self == commit.hexsha
         return commit
 
@@ -213,7 +216,7 @@ class Commit:
 
 def head_commit() -> Commit:
     "Get the commit at the HEAD."
-    return Commit(repos.global_repo().head.commit.hexsha)
+    return Commit(repos.working_git_repo().head.commit.hexsha)
 
 
 def git_show_cmd() -> None:

@@ -1,8 +1,17 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
+from pathlib import Path
+
 import pytest
 
+import problolm
 from problolm import Commit, CommitRange
+
+
+@pytest.fixture(scope="module", autouse=True)
+def set_repo_to_problolm(repo_root: Path):
+    with problolm.set_git_repo(path=str(repo_root)):
+        yield
 
 
 @pytest.fixture(scope="module")
