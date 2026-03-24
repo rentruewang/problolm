@@ -6,8 +6,10 @@ import contextlib as ctxl
 import logging
 import typing
 from argparse import ArgumentParser
+from collections.abc import Generator
 from pathlib import Path
 from typing import Protocol
+from urllib import parse
 
 from git import Repo
 
@@ -20,14 +22,40 @@ _current_git_repo: Repo | None = None
 "The global default repo."
 
 
-def repo(folder: str | Path = "."):
+def repo(loc: str = "."):
     """
     Find the git repo that the repository is located.
     """
 
+    # Remote path (http).
+    if _is_url(loc):
+        pass
+
+    # Local path.
+    if Path(loc).exists():
+        return _local_repo(loc)
+    else:
+        LOGGER.info("%s does not exist locally.")
+
+    raise ValueError(
+        f"We cannot handle {loc=}! Must be either a URL or exists on local folder."
+    )
+
+
+def _is_url(url: str) -> bool:
+    "Adapted from https://stackoverflow.com/a/52455972"
+    try:
+        result = parse.urlparse(url)
+        return bool(result.scheme) and bool(result.netloc)
+    except Exception:
+        return False
+
+
+def _local_repo(folder: str) -> Repo:
+
     LOGGER.info("Lookup up `%s`'s parents to find the git repository.", folder)
 
-    for path in _yield_parents_until_root(folder=folder):
+    for path in _yield_parents_until_root(folder):
         LOGGER.debug("Visiting %s", path)
         if (path / ".git").exists():
             LOGGER.info("Git repository found: %s", path)
@@ -45,7 +73,7 @@ def working_git_repo() -> Repo:
 
 
 @ctxl.contextmanager
-def set_git_repo(path: str | Path | Repo):
+def set_git_repo(path: str | Repo):
     "Context manager to set the git repo to the target."
 
     global _current_git_repo
@@ -59,8 +87,8 @@ def set_git_repo(path: str | Path | Repo):
         _current_git_repo = original
 
 
-def _yield_parents_until_root(folder: str | Path):
-    folder = Path(".")
+def _yield_parents_until_root(path: str, /) -> Generator[Path]:
+    folder = Path(path)
     yield folder
 
     while not _folder_is_root(folder):
