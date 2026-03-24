@@ -15,9 +15,8 @@ import fire
 import rich
 from git import BadName
 
-from problolm.fs import File
-
 from . import repos
+from .fs import File
 
 if typing.TYPE_CHECKING:
     from .ranges import CommitRange

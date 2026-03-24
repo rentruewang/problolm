@@ -67,6 +67,9 @@ dev = [
 pytest = [
     "pytest>=9.0.2",
     "pytest-xdist>=3.8.0",
+    "pytest-cov>=7.1.0",
+    "pytest-sugar>=1.1.1",
+    "better-exceptions>=0.3.3",
 ]
 jupyter = [
     "jupyter>=1.1.1",
