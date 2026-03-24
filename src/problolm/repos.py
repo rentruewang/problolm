@@ -1,6 +1,6 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-"Get the repo."
+"The global default repo. Since `problolm` will only work on 1 repo, it's global."
 
 import contextlib as ctxl
 import logging
