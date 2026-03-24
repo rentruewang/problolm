@@ -89,10 +89,14 @@ def working_git_repo() -> Repo:
 
 
 @ctxl.contextmanager
-def set_git_repo(path: str | Repo):
+def set_git_repo(path: str | Path | Repo):
     "Context manager to set the git repo to the target."
 
     global _current_git_repo
+
+    # The rest of the code all uses `str` for flexibility.
+    if isinstance(path, Path):
+        path = str(path.resolve())
 
     original = _current_git_repo
 
