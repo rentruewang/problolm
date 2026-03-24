@@ -16,7 +16,7 @@ import rich
 from git import BadName
 
 from . import repos
-from .fs import File
+from .fs import File, Folder
 
 if typing.TYPE_CHECKING:
     from .ranges import CommitRange
@@ -106,7 +106,7 @@ class Commit:
         assert self == commit.hexsha
         return commit
 
-    def fs(self):
+    def fs(self) -> Folder:
         "Return the folder structure at the specific commit."
 
         return self.__fs

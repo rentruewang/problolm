@@ -5,13 +5,16 @@ from pathlib import Path
 import pytest
 
 import problolm
-from problolm import Commit, CommitRange
+from problolm import Commit, CommitRange, RepoIsDirty
 
 
 @pytest.fixture(scope="module", autouse=True)
 def set_repo_to_problolm(repo_root: Path):
-    with problolm.set_git_repo(path=str(repo_root)):
-        yield
+    try:
+        with problolm.set_git_repo(path=str(repo_root)):
+            yield
+    except RepoIsDirty as e:
+        pytest.xfail(str(e))
 
 
 @pytest.fixture(scope="module")
@@ -30,19 +33,23 @@ def parent(commit) -> Commit:
 
 
 @pytest.fixture(scope="module")
-def commit_parrent_diff(commit, parent):
+def commit_parrent_diff(commit: Commit, parent: Commit) -> CommitRange:
     return CommitRange(commit, parent)
 
 
-def test_commits_eq(commit, short_commit):
+def test_commits_eq(commit: Commit, short_commit: Commit):
     assert commit == short_commit
 
 
-def test_commit_ne(commit, parent):
+def test_commit_ne(commit: Commit, parent: Commit):
     assert commit != parent
     assert commit.parent == parent
 
 
-def test_commit_range_eq(commit, parent, commit_parrent_diff):
+def test_commit_range_eq(
+    commit: Commit,
+    parent: Commit,
+    commit_parrent_diff: CommitRange,
+):
     assert commit_parrent_diff == commit - parent
     assert commit_parrent_diff == commit
