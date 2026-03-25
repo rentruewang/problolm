@@ -42,8 +42,8 @@ class CommitRange:
         return Delta(
             older=self.older,
             newer=self.newer,
-            older_path=diff.a_path,
-            newer_path=diff.b_path,
+            older_path=diff.b_path,
+            newer_path=diff.a_path,
         )
 
     def __iter__(self):

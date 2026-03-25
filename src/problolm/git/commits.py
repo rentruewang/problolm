@@ -115,7 +115,7 @@ class Commit:
     def __fs(self):
         from . import fs
 
-        return fs.consume(self.git.tree)
+        return fs.consume(self)
 
     @property
     def parents(self) -> list[Self]:

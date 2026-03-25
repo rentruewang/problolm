@@ -45,7 +45,7 @@ class LineRange:
         return self.finish - self.start
 
     def slice(self, text: Sequence[str]):
-        assert self.finish < len(text)
+        assert self.finish <= len(text)
         idx = slice(self.start, self.finish)
         return text[idx]
 
@@ -130,6 +130,10 @@ def difflib_diff(a: Sequence[str], b: Sequence[str]) -> Generator[DiffOp]:
 
 
 def unified_diff(a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str):
+    """
+    The function mimicking the `unified_diff` function from `difflib`.
+    """
+
     diff = difflib_diff(a, b)
 
     yield f"--- {fromfile}"

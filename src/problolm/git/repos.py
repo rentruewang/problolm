@@ -38,8 +38,8 @@ def init_repo(loc: str = ".") -> Repo:
 
     repo = _init_repo(loc=loc)
 
-    if repo.is_dirty():
-        raise RepoIsDirty("You have un-committed changes. This may cause problems.")
+    # if repo.is_dirty():
+    #     raise RepoIsDirty("You have un-committed changes. This may cause problems.")
 
     return repo
 
