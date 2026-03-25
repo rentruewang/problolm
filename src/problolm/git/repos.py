@@ -36,16 +36,6 @@ def init_repo(loc: str = ".") -> Repo:
     Note that this may perform a clone and is thus expensive.
     """
 
-    repo = _init_repo(loc=loc)
-
-    if repo.is_dirty():
-        raise RepoIsDirty("You have un-committed changes. This may cause problems.")
-
-    return repo
-
-
-def _init_repo(loc: str) -> Repo:
-
     # Local path.
     if Path(loc).exists():
         return _local_repo(loc)

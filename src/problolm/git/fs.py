@@ -14,6 +14,9 @@ from typing import NamedTuple, NoReturn, Self
 from git import Blob, Submodule, Tree
 from rich.tree import Tree as RichTree
 
+if typing.TYPE_CHECKING:
+    from .commits import Commit
+
 __all__ = ["TrieNode", "Folder", "File"]
 
 LOGGER = logging.getLogger(__name__)
@@ -31,6 +34,7 @@ class TrieNode(ABC):
         @abc.abstractmethod
         def visit_file(self, file: File, /) -> T: ...
 
+    commit: Commit
     path: str
     parent: TrieNode | None
 
@@ -124,7 +128,9 @@ class Folder(TrieNode):
         try:
             return self.items[key]
         except KeyError:
-            raise ValueError(f"{self!r} / {key} is not present.")
+            raise ValueError(
+                f"{self.full_path()}/{key} is not present in {self.commit}."
+            )
 
     def guarded_get[T](self, key: str, typ: type[T]) -> T | None:
         """
@@ -148,7 +154,7 @@ class Folder(TrieNode):
         if folder := self.guarded_get(key, Folder):
             return folder
 
-        new_node = type(self)(key, parent=self)
+        new_node = Folder(commit=self.commit, path=key, parent=self)
         self.items[key] = new_node
         return new_node
 
@@ -161,7 +167,7 @@ class Folder(TrieNode):
         if file := self.guarded_get(key, File):
             return file
 
-        new_node = File(path=key, data=lines, parent=self)
+        new_node = File(commit=self.commit, path=key, data=lines, parent=self)
         self.items[key] = new_node
         return new_node
 
@@ -179,8 +185,8 @@ class Folder(TrieNode):
         return list(self.items.values())
 
     @classmethod
-    def root(cls) -> Self:
-        return cls(path="", parent=None)
+    def init_root_for(cls, commit: Commit) -> Self:
+        return cls(commit=commit, path="", parent=None)
 
 
 @dcls.dataclass(frozen=True)
@@ -238,18 +244,19 @@ class File(TrieNode):
         return []
 
 
-def consume(obj: Tree, /) -> Folder:
+def consume(commit: Commit, /) -> Folder:
     """
     Consume the object (must be a git tree), and produce the folder structure.
 
     Args:
-        obj: The git tree object.
+        commit: The commit object.
 
     Returns:
         The root folder for the given file system.
     """
 
-    root = Folder.root()
+    obj = commit.git.tree
+    root = Folder.init_root_for(commit)
 
     if not isinstance(obj, Tree):
         raise TypeError(f"Expected a git tree, got {obj}.")
