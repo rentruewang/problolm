@@ -7,6 +7,7 @@ from pytest import FixtureRequest
 
 import problolm
 from problolm import Commit, CommitRange
+from problolm.git.commits import set_short_sha_size
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -36,7 +37,8 @@ def commit_changes(commit: Commit, parent: Commit) -> CommitRange:
 
 
 def test_commits_eq(commit: Commit):
-    short_commit = commit.sha[:7]
+    with set_short_sha_size(9):
+        short_commit = commit.short_sha
     assert commit == short_commit
 
 

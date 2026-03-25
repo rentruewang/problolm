@@ -177,10 +177,15 @@ def _gen_hunk(i1: int, i2: int, j1: int, j2: int) -> str:
 class DnaDiffResult[T]:
     left: Sequence[T | None]
     right: Sequence[T | None]
-    score: NDArray
+    score_matrix: NDArray
 
     def __post_init__(self):
         assert len(self.left) == len(self.right)
+        assert self.score_matrix.ndim == 2
+
+    @property
+    def score(self):
+        return float(self.score_matrix[-1, -1])
 
     def ops(self) -> Generator[DiffOp]:
         """
