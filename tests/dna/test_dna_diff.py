@@ -1,11 +1,13 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from pytest import FixtureRequest
 
 import problolm
-from problolm import DiffOpCode, DnaDiffer, TreeSitterFileParser
+from problolm import Differ, DiffOpCode, DnaDiffer, TreeSitterFileParser
 
 
 @pytest.fixture(scope="module")
@@ -35,22 +37,25 @@ def case_2_grammar(case_2: Path) -> list[str]:
     return [res.grammar for res in TreeSitterFileParser(case_2).parse()]
 
 
-@pytest.fixture(scope="module")
-def differ():
-    return DnaDiffer()
+def _differ() -> Generator[Differ[str]]:
+    yield problolm.difflib_diff
+    yield DnaDiffer()
 
 
-def test_equal(case_1_grammar: list[str], differ: DnaDiffer):
-    result = differ.align(case_1_grammar, case_1_grammar)
-    diffs = list(problolm.difflib_diff(result.left, result.right))
+@pytest.fixture(params=_differ())
+def differ(request: FixtureRequest) -> Differ[str]:
+    return request.param
+
+
+def test_equal(case_1_grammar: list[str], differ: Differ[str]):
+    diffs = list(differ(case_1_grammar, case_1_grammar))
     assert all(diff.code == DiffOpCode.EQUAL for diff in diffs)
 
 
 def test_not_equal(
-    case_1_grammar: list[str], case_2_grammar: list[str], differ: DnaDiffer
+    case_1_grammar: list[str], case_2_grammar: list[str], differ: Differ[str]
 ):
-    result = differ.align(case_1_grammar, case_2_grammar)
-    diffs = list(problolm.difflib_diff(result.left, result.right))
+    diffs = list(differ(case_1_grammar, case_2_grammar))
 
     assert len(diffs) > 0
     assert not all(diff.code == DiffOpCode.EQUAL for diff in diffs)

@@ -6,6 +6,7 @@ import dataclasses as dcls
 from collections.abc import Generator, Sequence
 from difflib import SequenceMatcher
 from enum import StrEnum
+from typing import Protocol
 
 import numpy as np
 from numpy.typing import NDArray
@@ -17,7 +18,14 @@ __all__ = [
     "DiffOpCode",
     "LineRange",
     "DnaDiffer",
+    "Differ",
 ]
+
+
+class Differ[T](Protocol):
+    def __call__(
+        self, left: Sequence[T], right: Sequence[T], /
+    ) -> Generator[DiffOp]: ...
 
 
 class DiffOpCode(StrEnum):
@@ -174,12 +182,51 @@ class DnaDiffResult[T]:
     def __post_init__(self):
         assert len(self.left) == len(self.right)
 
-    # def raw_ops(self) -> Generator[DiffOp]:
-    #     for i, [l, r] in enumerate(zip(self.left, self.right)):
-    #         assert l is not None or r is not None
+    def ops(self) -> Generator[DiffOp]:
+        """
+        Convert the diffs into `DiffOp`s.
 
-    #         if l == r:
-    #             yield DiffOp(DiffOpCode.EQUAL, LineRange(i, i + 1), LineRange(i, i + 1))
+        This is a very simplified implementation and does not do aggregation.
+
+        Yields:
+            `DiffOp` where each line corresponds to 1 operation.
+        """
+
+        li = ri = 0
+        for l, r in zip(self.left, self.right):
+            assert not (l is r is None), "Impossible!"
+
+            # Insert.
+            if l is None:
+                yield DiffOp(
+                    code=DiffOpCode.INSERT,
+                    source=LineRange(li, li),
+                    target=LineRange(ri, ri := (ri + 1)),
+                )
+
+            # Delete.
+            elif r is None:
+                yield DiffOp(
+                    code=DiffOpCode.DELETE,
+                    source=LineRange(li, li := (li + 1)),
+                    target=LineRange(ri, ri),
+                )
+
+            # Equal.
+            elif l == r:
+                yield DiffOp(
+                    code=DiffOpCode.EQUAL,
+                    source=LineRange(li, li := (li + 1)),
+                    target=LineRange(ri, ri := (ri + 1)),
+                )
+
+            # Replace.
+            else:
+                yield DiffOp(
+                    code=DiffOpCode.REPLACE,
+                    source=LineRange(li, li := (li + 1)),
+                    target=LineRange(ri, ri := (ri + 1)),
+                )
 
 
 @dcls.dataclass(frozen=True)
@@ -187,6 +234,9 @@ class DnaDiffer:
     equal: float = 1
     diff: float = -1
     gap: float = -1
+
+    def __call__[T](self, left: Sequence[T], right: Sequence[T]):
+        return self.align(left, right).ops()
 
     def align[T](self, left: Sequence[T], right: Sequence[T]):
         score = self.lcs(left, right)
