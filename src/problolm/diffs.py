@@ -72,6 +72,11 @@ class DiffOp:
                 if len(self.source) != len(self.target):
                     raise ValueError(f"{self.code=} but {self.source=}, {self.target=}")
 
+                if len(self.source) == 0:
+                    raise ValueError(
+                        f"{self.code=}, but chunk of size 0 at {self.source=}, {self.target=}"
+                    )
+
             # len(rhs) = 0.
             case DiffOpCode.DELETE:
                 if len(self.target):
@@ -162,9 +167,19 @@ def _gen_hunk(i1: int, i2: int, j1: int, j2: int) -> str:
 
 @dcls.dataclass(frozen=True)
 class DnaDiffResult[T]:
-    left: Sequence[T]
-    right: Sequence[T]
+    left: Sequence[T | None]
+    right: Sequence[T | None]
     score: NDArray
+
+    def __post_init__(self):
+        assert len(self.left) == len(self.right)
+
+    # def raw_ops(self) -> Generator[DiffOp]:
+    #     for i, [l, r] in enumerate(zip(self.left, self.right)):
+    #         assert l is not None or r is not None
+
+    #         if l == r:
+    #             yield DiffOp(DiffOpCode.EQUAL, LineRange(i, i + 1), LineRange(i, i + 1))
 
 
 @dcls.dataclass(frozen=True)
@@ -173,12 +188,14 @@ class DnaDiffer:
     diff: float = -1
     gap: float = -1
 
-    def align[T](self, left: Sequence[T], right: Sequence[T]) -> DnaDiffResult[T]:
+    def align[T](self, left: Sequence[T], right: Sequence[T]):
         score = self.lcs(left, right)
         result_left, result_right = self.traceback(left, right, score)
         return DnaDiffResult(result_left, result_right, score)
 
     def lcs[T](self, left: Sequence[T], right: Sequence[T]) -> NDArray:
+        "Do a variation of LCS used in DNA."
+
         n, m = len(left), len(right)
 
         score = np.zeros((n + 1, m + 1), dtype=float)
@@ -206,9 +223,11 @@ class DnaDiffer:
         return score
 
     def traceback[T](self, seq1: Sequence[T], seq2: Sequence[T], score: NDArray):
+        "Outputs the tracebacks. `None` denote gaps."
+
         i, j = len(seq1), len(seq2)
-        align_left: list[T] = []
-        align_right: list[T] = []
+        align_left: list[T | None] = []
+        align_right: list[T | None] = []
 
         while i > 0 and j > 0:
             matching = self.equal if seq1[i - 1] == seq2[j - 1] else self.diff
@@ -220,9 +239,11 @@ class DnaDiffer:
                 j -= 1
             elif score[i, j] == score[i - 1, j] + self.gap:
                 align_left.append(seq1[i - 1])
+                align_right.append(None)
                 i -= 1
             else:
                 align_right.append(seq2[j - 1])
+                align_left.append(None)
                 j -= 1
 
         return list(reversed(align_left)), list(reversed(align_right))
