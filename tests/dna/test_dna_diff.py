@@ -4,7 +4,6 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
-from pytest import FixtureRequest
 
 import problolm
 from problolm import Differ, DiffOpCode, DnaDiffer, TreeSitterFileParser
@@ -43,7 +42,7 @@ def _differ() -> Generator[Differ[str]]:
 
 
 @pytest.fixture(params=_differ())
-def differ(request: FixtureRequest) -> Differ[str]:
+def differ(request: pytest.FixtureRequest) -> Differ[str]:
     return request.param
 
 
