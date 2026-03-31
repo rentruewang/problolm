@@ -1,7 +1,7 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
 import pathlib
-from collections.abc import Generator
+from collections import abc as cabc
 
 import pytest
 
@@ -35,7 +35,7 @@ def case_2_grammar(case_2: pathlib.Path) -> list[str]:
     return [res.grammar for res in problolm.TreeSitterFileParser(case_2).parse()]
 
 
-def _differ() -> Generator[problolm.Differ[str]]:
+def _differ() -> cabc.Generator[problolm.Differ[str]]:
     yield problolm.difflib_diff
     yield problolm.DnaDiffer()
 
