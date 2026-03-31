@@ -8,8 +8,8 @@ import os
 import statistics
 import typing
 from argparse import ArgumentParser, Namespace
-from collections.abc import Iterable
 
+from collections import abc
 import torch
 from torch import cuda
 from torch import device as Device
@@ -34,7 +34,7 @@ class DetectionConfig:
     threshold: float
 
 
-def parse_model_list(values: Iterable[str]) -> list[str]:
+def parse_model_list(values: abc.Iterable[str]) -> list[str]:
     """Normalize comma-separated model IDs into a flat list."""
     models: list[str] = []
     for value in values:
