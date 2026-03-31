@@ -7,7 +7,6 @@ import enum
 import functools
 import logging
 import typing
-from collections import abc as cabc
 
 import fire
 import git
@@ -93,7 +92,7 @@ class Commit:
 
         return NotImplemented
 
-    def list_files(self) -> cabc.Generator[fs.File]:
+    def list_files(self):
         file_system = self.fs()
         yield from file_system.list_files()
 
@@ -103,7 +102,7 @@ class Commit:
         assert self == commit.hexsha
         return commit
 
-    def fs(self) -> fs.Folder:
+    def fs(self):
         "Return the folder structure at the specific commit."
 
         return self.__fs
