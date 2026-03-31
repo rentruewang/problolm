@@ -2,14 +2,12 @@
 
 "Handle the environment and some github3 integration."
 
+import enum
 import functools
 import os
 import typing
-from enum import StrEnum
-from enum import auto as Auto
 
 import github3
-from github3 import GitHub
 
 __all__ = ["github_repo", "github_ref", "github_event"]
 
@@ -32,12 +30,12 @@ def github_ref():
     return os.environ["GITHUB_REF"]
 
 
-class EventType(StrEnum):
+class EventType(enum.StrEnum):
     "The event type that we are handling."
 
-    ISSUE = Auto()
-    PULL_REQUEST = Auto()
-    OTHER = Auto()
+    ISSUE = enum.auto()
+    PULL_REQUEST = enum.auto()
+    OTHER = enum.auto()
 
 
 def github_event():
@@ -59,7 +57,7 @@ def github_event():
 
 @functools.cache
 @typing.no_type_check
-def login() -> GitHub:
+def login() -> github3.GitHub:
     token = github_token()
 
     if session := github3.login(token=token):
