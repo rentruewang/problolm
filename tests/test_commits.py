@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-from pytest import FixtureRequest
 
 import problolm
 from problolm import Commit, CommitRange
@@ -22,7 +21,7 @@ def _commits():
 
 
 @pytest.fixture(scope="module", params=_commits())
-def commit(request: FixtureRequest) -> Commit:
+def commit(request: pytest.FixtureRequest) -> Commit:
     return Commit(request.param)
 
 
