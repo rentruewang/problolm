@@ -7,15 +7,13 @@ import dataclasses as dcls
 import functools
 import logging
 import typing
-from abc import ABC
-from collections.abc import Generator
-from typing import NamedTuple, NoReturn, Self
+from collections import abc as cabc
 
-from git import Blob, Submodule, Tree
-from rich.tree import Tree as RichTree
+import git
+from rich import tree
 
 if typing.TYPE_CHECKING:
-    from .commits import Commit
+    from . import commits
 
 __all__ = ["TrieNode", "Folder", "File"]
 
@@ -23,8 +21,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 @dcls.dataclass(frozen=True)
-class TrieNode(ABC):
-    class Visitor[T](ABC):
+class TrieNode(abc.ABC):
+    class Visitor[T](abc.ABC):
         def visit(self, node: TrieNode) -> T:
             return node.accept(self)
 
@@ -34,7 +32,7 @@ class TrieNode(ABC):
         @abc.abstractmethod
         def visit_file(self, file: File, /) -> T: ...
 
-    commit: Commit
+    commit: commits.Commit
     path: str
     parent: TrieNode | None
 
@@ -80,15 +78,15 @@ class Folder(TrieNode):
 
     def __rich__(self):
 
-        def add_tree(node: TrieNode, tree: RichTree):
+        def add_tree(node: TrieNode, t: tree.Tree):
 
             for children in node.children():
-                subtree = tree.add(label=children.path)
+                subtree = t.add(label=children.path)
                 add_tree(children, subtree)
 
-        tree = RichTree(label=self.path)
-        add_tree(self, tree)
-        return tree
+        t = tree.Tree(label=self.path)
+        add_tree(self, t)
+        return t
 
     def __truediv__(self, key: str) -> TrieNode:
         paths = key.split("/")
@@ -103,20 +101,20 @@ class Folder(TrieNode):
 
         return node
 
-    def list_files(self) -> Generator[File]:
+    def list_files(self) -> cabc.Generator[File]:
         """
         List the files in the sub-directory.
 
         Yields:
-            Generator[File]: _description_
+            cabc.Generator[File]: _description_
         """
 
-        class ListFileVisitor(TrieNode.Visitor[Generator[File]]):
+        class ListFileVisitor(TrieNode.Visitor[cabc.Generator[File]]):
 
-            def visit_file(self, file: File) -> Generator[File, None, None]:
+            def visit_file(self, file: File) -> cabc.Generator[File, None, None]:
                 yield file
 
-            def visit_folder(self, folder: Folder) -> Generator[File, None, None]:
+            def visit_folder(self, folder: Folder) -> cabc.Generator[File, None, None]:
                 yield from folder.list_files()
 
         lister = ListFileVisitor()
@@ -185,7 +183,7 @@ class Folder(TrieNode):
         return list(self.items.values())
 
     @classmethod
-    def init_root_for(cls, commit: Commit) -> Self:
+    def init_root_for(cls, commit: commits.Commit) -> typing.Self:
         return cls(commit=commit, path="", parent=None)
 
 
@@ -244,7 +242,7 @@ class File(TrieNode):
         return []
 
 
-def consume(commit: Commit, /) -> Folder:
+def consume(commit: commits.Commit, /) -> Folder:
     """
     Consume the object (must be a git tree), and produce the folder structure.
 
@@ -258,7 +256,7 @@ def consume(commit: Commit, /) -> Folder:
     obj = commit.git.tree
     root = Folder.init_root_for(commit)
 
-    if not isinstance(obj, Tree):
+    if not isinstance(obj, git.Tree):
         raise TypeError(f"Expected a git tree, got {obj}.")
 
     for file in obj.traverse():
@@ -269,39 +267,39 @@ def consume(commit: Commit, /) -> Folder:
 
 def _handle_traversal(file, root: Folder) -> None:
     match file:
-        case Tree():
+        case git.Tree():
             _handle_tree(file, root=root)
-        case Blob():
+        case git.Blob():
             _handle_blob(file, root=root)
-        case Submodule():
+        case git.Submodule():
             _handle_submodule(file, root=root)
         case _:
             raise TypeError(type(file))
 
 
-def _handle_tree(tree: Tree, /, root: Folder) -> Folder:
+def _handle_tree(tree: git.Tree, /, root: Folder) -> Folder:
     LOGGER.debug("Recurse into sub-tree: %s", tree.path)
     pp = _create_parent_path(tree, root=root)
     folder = pp.parent.add_folder(pp.path)
     return folder
 
 
-def _handle_blob(blob: Blob, /, root: Folder) -> File:
+def _handle_blob(blob: git.Blob, /, root: Folder) -> File:
     LOGGER.debug("Recurse into file: %s", blob.path)
     pp = _create_parent_path(blob, root=root)
     return pp.parent.add_file(pp.path, blob.data_stream.read())
 
 
-def _handle_submodule(submodule: Submodule, /, root: Folder) -> NoReturn:
+def _handle_submodule(submodule: git.Submodule, /, root: Folder) -> typing.NoReturn:
     raise NotImplementedError
 
 
-class ParentPath(NamedTuple):
+class ParentPath(typing.NamedTuple):
     parent: Folder
     path: str
 
 
-def _create_parent_path(tree_or_blob: Tree | Blob, root: Folder) -> ParentPath:
+def _create_parent_path(tree_or_blob: git.Tree | git.Blob, root: Folder) -> ParentPath:
     "Create parent folder, and pass the current path (remaining part) back."
 
     *ancestors, path = str(tree_or_blob.path).split("/")

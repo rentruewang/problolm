@@ -3,13 +3,13 @@
 "The diff information."
 
 import dataclasses as dcls
-from collections.abc import Generator, Sequence
-from difflib import SequenceMatcher
-from enum import StrEnum
-from typing import Protocol
+import difflib
+import enum
+import typing
+from collections import abc as cabc
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy import typing as npt
 
 __all__ = [
     "unified_diff",
@@ -22,13 +22,13 @@ __all__ = [
 ]
 
 
-class Differ[T](Protocol):
+class Differ[T](typing.Protocol):
     def __call__(
-        self, left: Sequence[T], right: Sequence[T], /
-    ) -> Generator[DiffOp]: ...
+        self, left: cabc.Sequence[T], right: cabc.Sequence[T], /
+    ) -> cabc.Generator[DiffOp]: ...
 
 
-class DiffOpCode(StrEnum):
+class DiffOpCode(enum.StrEnum):
     "All the possibilities of output of `difflib`."
 
     REPLACE = "replace"
@@ -52,7 +52,7 @@ class LineRange:
     def __len__(self) -> int:
         return self.finish - self.start
 
-    def slice(self, text: Sequence[str]):
+    def slice(self, text: cabc.Sequence[str]):
         assert self.finish <= len(text)
         idx = slice(self.start, self.finish)
         return text[idx]
@@ -99,7 +99,9 @@ class DiffOp:
             case DiffOpCode.REPLACE:
                 pass
 
-    def render(self, left: Sequence[str], right: Sequence[str]) -> Generator[str]:
+    def render(
+        self, left: cabc.Sequence[str], right: cabc.Sequence[str]
+    ) -> cabc.Generator[str]:
         left = self.source.slice(left)
         right = self.target.slice(right)
 
@@ -127,12 +129,14 @@ class DiffOp:
         )
 
 
-def difflib_diff(a: Sequence[str], b: Sequence[str]) -> Generator[DiffOp]:
+def difflib_diff(
+    a: cabc.Sequence[str], b: cabc.Sequence[str]
+) -> cabc.Generator[DiffOp]:
     """
     Yields a generator of `DiffOp`.
     """
 
-    matcher = SequenceMatcher(None, a, b)
+    matcher = difflib.SequenceMatcher(None, a, b)
 
     for code, i1, i2, j1, j2 in matcher.get_opcodes():
         yield DiffOp(
@@ -142,7 +146,9 @@ def difflib_diff(a: Sequence[str], b: Sequence[str]) -> Generator[DiffOp]:
         )
 
 
-def unified_diff(a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str):
+def unified_diff(
+    a: cabc.Sequence[str], b: cabc.Sequence[str], fromfile: str, tofile: str
+):
     """
     The function mimicking the `unified_diff` function from `difflib`.
     """
@@ -159,12 +165,12 @@ def unified_diff(a: Sequence[str], b: Sequence[str], fromfile: str, tofile: str)
             yield from rendered
 
 
-def _render_delete(lines: Sequence[str]):
+def _render_delete(lines: cabc.Sequence[str]):
     for l in lines:
         yield "-" + l
 
 
-def _render_insert(lines: Sequence[str]):
+def _render_insert(lines: cabc.Sequence[str]):
     for l in lines:
         yield "+" + l
 
@@ -175,9 +181,9 @@ def _gen_hunk(i1: int, i2: int, j1: int, j2: int) -> str:
 
 @dcls.dataclass(frozen=True)
 class DnaDiffResult[T]:
-    left: Sequence[T | None]
-    right: Sequence[T | None]
-    score_matrix: NDArray
+    left: cabc.Sequence[T | None]
+    right: cabc.Sequence[T | None]
+    score_matrix: npt.NDArray
 
     def __post_init__(self):
         assert len(self.left) == len(self.right)
@@ -187,7 +193,7 @@ class DnaDiffResult[T]:
     def score(self):
         return float(self.score_matrix[-1, -1])
 
-    def ops(self) -> Generator[DiffOp]:
+    def ops(self) -> cabc.Generator[DiffOp]:
         """
         Convert the diffs into `DiffOp`s.
 
@@ -240,15 +246,15 @@ class DnaDiffer:
     diff: float = -1
     gap: float = -1
 
-    def __call__[T](self, left: Sequence[T], right: Sequence[T]):
+    def __call__[T](self, left: cabc.Sequence[T], right: cabc.Sequence[T]):
         return self.align(left, right).ops()
 
-    def align[T](self, left: Sequence[T], right: Sequence[T]):
+    def align[T](self, left: cabc.Sequence[T], right: cabc.Sequence[T]):
         score = self.lcs(left, right)
         result_left, result_right = self.traceback(left, right, score)
         return DnaDiffResult(result_left, result_right, score)
 
-    def lcs[T](self, left: Sequence[T], right: Sequence[T]) -> NDArray:
+    def lcs[T](self, left: cabc.Sequence[T], right: cabc.Sequence[T]) -> npt.NDArray:
         "Do a variation of LCS used in DNA."
 
         n, m = len(left), len(right)
@@ -277,7 +283,9 @@ class DnaDiffer:
 
         return score
 
-    def traceback[T](self, seq1: Sequence[T], seq2: Sequence[T], score: NDArray):
+    def traceback[T](
+        self, seq1: cabc.Sequence[T], seq2: cabc.Sequence[T], score: npt.NDArray
+    ):
         "Outputs the tracebacks. `None` denote gaps."
 
         i, j = len(seq1), len(seq2)

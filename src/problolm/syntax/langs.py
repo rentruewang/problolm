@@ -2,20 +2,20 @@
 
 "Different languages support for tree sitter."
 
+import enum
+import pathlib
 import typing
-from collections.abc import Callable
-from enum import StrEnum
-from pathlib import Path
+from collections import abc as cabc
 
+import tree_sitter as ts
 from pygments import lexers
-from tree_sitter import Tree
 
 __all__ = ["guess_from_filename", "grammar_for_file", "LangName", "grammar_for_lang"]
 
-type LangaugeParser = Callable[[bytes], Tree]
+type LangaugeParser = cabc.Callable[[bytes], ts.Tree]
 
 
-def grammar_for_file(filename: str | Path, /) -> Callable[[], object]:
+def grammar_for_file(filename: str | pathlib.Path, /) -> cabc.Callable[[], object]:
     """
     Register a new tree-sitter parser into the global language registry,
     that can be looked up with the specified `aliases`.
@@ -25,7 +25,7 @@ def grammar_for_file(filename: str | Path, /) -> Callable[[], object]:
     return grammar_for_lang(lang)
 
 
-class LangName(StrEnum):
+class LangName(enum.StrEnum):
     "Enum for the names of the languages."
 
     PYTHON = "Python"
@@ -51,7 +51,7 @@ class LangName(StrEnum):
     MD = "Markdown"
 
 
-def guess_from_filename(filename: str | Path, /) -> LangName:
+def guess_from_filename(filename: str | pathlib.Path, /) -> LangName:
     "Guess the given filename as the language."
 
     guess = _guess_from_filename(filename)
@@ -83,7 +83,7 @@ def guess_from_filename(filename: str | Path, /) -> LangName:
 
 
 @typing.no_type_check
-def _guess_from_filename(filename: str | Path, /) -> str | None:
+def _guess_from_filename(filename: str | pathlib.Path, /) -> str | None:
     try:
         lexer = lexers.get_lexer_for_filename(str(filename).lower())
         return lexer.name
@@ -91,7 +91,7 @@ def _guess_from_filename(filename: str | Path, /) -> str | None:
         return None
 
 
-def grammar_for_lang(file_type: str | LangName, /) -> Callable[[], object]:
+def grammar_for_lang(file_type: str | LangName, /) -> cabc.Callable[[], object]:
     try:
         file_type = _resolve_file_type(file_type)
     except ValueError as ve:

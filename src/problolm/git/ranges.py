@@ -5,8 +5,7 @@
 import dataclasses as dcls
 import logging
 
-from .commits import Commit
-from .deltas import Delta
+from . import commits, deltas
 
 __all__ = ["CommitRange"]
 
@@ -17,12 +16,12 @@ LOGGER = logging.getLogger(__name__)
 class CommitRange:
     "The commit diff."
 
-    newer: Commit
+    newer: commits.Commit
     """
     The LHS of the `-` equation. Inclusive.
     """
 
-    older: Commit
+    older: commits.Commit
     """
     The RHS of the `-` equation. Exclusive.
     """
@@ -37,9 +36,9 @@ class CommitRange:
     def __len__(self) -> int:
         return len(self.git)
 
-    def __getitem__(self, idx: int) -> Delta:
+    def __getitem__(self, idx: int) -> deltas.Delta:
         diff = self.git[idx]
-        return Delta(
+        return deltas.Delta(
             older=self.older,
             newer=self.newer,
             older_path=diff.b_path,
@@ -54,7 +53,7 @@ class CommitRange:
         match other:
             case CommitRange():
                 return self.newer == other.newer and self.older == other.older
-            case Commit():
+            case commits.Commit():
                 return self.newer == other and self.older == other.parent
 
         return NotImplemented

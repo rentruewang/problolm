@@ -1,16 +1,16 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-from collections.abc import Generator
-from pathlib import Path
+import pathlib
+from collections import abc as cabc
 
 import pytest
-from tree_sitter import Node
+import tree_sitter as ts
 
-from problolm import TreeSitterFileParser
+import problolm
 
 
 def _cases():
-    cases_dir = Path(__file__).parent / "cases"
+    cases_dir = pathlib.Path(__file__).parent / "cases"
     assert cases_dir.exists()
     assert cases_dir.is_dir()
 
@@ -18,21 +18,21 @@ def _cases():
 
 
 @pytest.fixture(scope="session", params=_cases())
-def case(request) -> Path:
+def case(request) -> pathlib.Path:
     result = request.param
-    assert isinstance(result, Path)
+    assert isinstance(result, pathlib.Path)
     assert result.exists()
     assert result.is_file()
     return result
 
 
 def test_parse_case(case) -> None:
-    parser = TreeSitterFileParser(case)
+    parser = problolm.TreeSitterFileParser(case)
     result = parser.parse()
     assert all(isinstance(i.grammar, str) for i in result)
 
 
-def _flatten_children(tree: Node) -> Generator[Node]:
+def _flatten_children(tree: ts.Node) -> cabc.Generator[ts.Node]:
     yield tree
 
     for child in tree.children:
@@ -40,6 +40,6 @@ def _flatten_children(tree: Node) -> Generator[Node]:
 
 
 def test_tree_generator(case):
-    parser = TreeSitterFileParser(case)
+    parser = problolm.TreeSitterFileParser(case)
     result = parser.parse()
     assert len(result) == len(list(_flatten_children(result.tree.root_node)))

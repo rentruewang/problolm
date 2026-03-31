@@ -6,15 +6,11 @@ import dataclasses as dcls
 import logging
 import re
 import typing
-from collections.abc import Generator
-from typing import Self
+from collections import abc as cabc
 
-from github3.exceptions import NotFoundError
-from github3.pulls import PullRequest
-from github3.repos import Repository
+from github3 import exceptions, pulls, repos
 
-from . import envs
-from .git import Commit
+from . import envs, git
 
 __all__ = ["GitHubRepo", "GitHubPr", "github_repo", "github_pull_request"]
 
@@ -31,7 +27,7 @@ class GitHubRepo:
     slug: str
     "The name of the repo."
 
-    github3: Repository
+    github3: repos.Repository
     "The github3 object."
 
     def __str__(self) -> str:
@@ -50,7 +46,7 @@ class GitHubRepo:
         return f"https://github.com/{self.owner}/{self.slug}"
 
     @classmethod
-    def from_name(cls, repo: str, /) -> Self:
+    def from_name(cls, repo: str, /) -> typing.Self:
         owner, slug = repo.split("/")
         return cls.from_owner_slug(owner=owner, slug=slug)
 
@@ -91,7 +87,7 @@ class GitHubPr:
     number: int
     "The PR number."
 
-    github3: PullRequest
+    github3: pulls.PullRequest
     "The pr object of github."
 
     def __post_init__(self) -> None:
@@ -99,7 +95,7 @@ class GitHubPr:
 
         try:
             _ = self.github3
-        except NotFoundError as ne:
+        except exceptions.NotFoundError as ne:
             raise ValueError(
                 f"PR number {self.number} is not valid. "
                 f"Check on url: {self.url}. Is this a PR?"
@@ -108,16 +104,16 @@ class GitHubPr:
     def __str__(self) -> str:
         return self.url
 
-    def __iter__(self) -> Generator[Commit]:
+    def __iter__(self) -> cabc.Generator[git.Commit]:
         yield from self.commits()
 
     @property
     def url(self):
         return f"{self.repo.url}/pull/{self.number}"
 
-    def commits(self) -> Generator[Commit]:
+    def commits(self) -> cabc.Generator[git.Commit]:
         for commit in self.github3.commits():
-            yield Commit(commit.sha)
+            yield git.Commit(commit.sha)
 
     def patch(self) -> str:
         return self.github3.patch().decode()

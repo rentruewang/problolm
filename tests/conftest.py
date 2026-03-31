@@ -1,10 +1,10 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-from pathlib import Path
+import pathlib
 
 import pytest
 
 
 @pytest.fixture(scope="session")
-def repo_root() -> Path:
-    return Path(__file__).parent.absolute()
+def repo_root() -> pathlib.Path:
+    return pathlib.Path(__file__).parent.absolute()

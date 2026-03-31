@@ -2,18 +2,17 @@
 
 """Detect AI-generated code in files using LLM perplexity."""
 
+import argparse
 import dataclasses as dcls
 import functools
 import os
 import statistics
 import typing
-from argparse import ArgumentParser, Namespace
-from collections.abc import Iterable
+from collections import abc as cabc
 
 import torch
+import transformers
 from torch import cuda
-from torch import device as Device
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 __all__ = ["load_hf_model", "analyze_file"]
 
@@ -34,7 +33,7 @@ class DetectionConfig:
     threshold: float
 
 
-def parse_model_list(values: Iterable[str]) -> list[str]:
+def parse_model_list(values: cabc.Iterable[str]) -> list[str]:
     """Normalize comma-separated model IDs into a flat list."""
     models: list[str] = []
     for value in values:
@@ -47,22 +46,22 @@ def parse_model_list(values: Iterable[str]) -> list[str]:
     return models or DEFAULT_MODELS
 
 
-def resolve_device(device: str | Device | None) -> Device:
+def resolve_device(device: str | torch.device | None) -> torch.device:
     """Resolve the requested torch device or pick a sensible default."""
 
     match device:
         case str():
-            return Device(device)
-        case Device():
+            return torch.device(device)
+        case torch.device():
             return device
         case None:
             device = "cuda" if cuda.is_available() else "cpu"
-            return Device(device)
+            return torch.device(device)
         case _:
             raise RuntimeError("Unreachable.")
 
 
-def effective_max_length(tokenizer: AutoTokenizer, requested: int) -> int:
+def effective_max_length(tokenizer: transformers.AutoTokenizer, requested: int) -> int:
     """Clamp requested max length to the tokenizer's model limit when set."""
     max_len = getattr(tokenizer, "model_max_length", None)
     if max_len and max_len < 1_000_000:
@@ -73,8 +72,8 @@ def effective_max_length(tokenizer: AutoTokenizer, requested: int) -> int:
 
 @dcls.dataclass
 class LoadedModel:
-    model: AutoModelForCausalLM
-    tokenizer: AutoTokenizer
+    model: transformers.AutoModelForCausalLM
+    tokenizer: transformers.AutoTokenizer
 
 
 def load_hf_model(model_id: str, device: str | None = None) -> LoadedModel:
@@ -85,9 +84,9 @@ def load_hf_model(model_id: str, device: str | None = None) -> LoadedModel:
 
 @typing.no_type_check
 @functools.cache
-def _load_hf_model_to_dev_cached(model_id: str, device: Device):
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(model_id)
+def _load_hf_model_to_dev_cached(model_id: str, device: torch.device):
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
+    model = transformers.AutoModelForCausalLM.from_pretrained(model_id)
     model.to(resolve_device(device))
     model.eval()
     return LoadedModel(model, tokenizer)
@@ -138,9 +137,11 @@ def aggregate_scores(scores: list[float], strategy: str) -> float:
         raise ValueError(f"Unknown strategy: {strategy}")
 
 
-def parse_args() -> Namespace:
+def parse_args() -> argparse.Namespace:
     """Parse CLI arguments and environment defaults."""
-    parser = ArgumentParser(description="Detect AI-generated code via LLM perplexity.")
+    parser = argparse.ArgumentParser(
+        description="Detect AI-generated code via LLM perplexity."
+    )
     _ = parser.add_argument("files", nargs="*", help="Files to analyze.")
     _ = parser.add_argument(
         "--models",
