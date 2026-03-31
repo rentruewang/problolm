@@ -1,13 +1,13 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-from typing import NamedTuple
+import typing
 
 import pytest
 
 import problolm
 
 
-class FileLang(NamedTuple):
+class FileLang(typing.NamedTuple):
     file: str
     lang: str
 

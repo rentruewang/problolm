@@ -5,10 +5,10 @@
 import dataclasses as dcls
 import functools
 import logging
-from collections.abc import Generator, Sequence
-from pathlib import Path
+import pathlib
+from collections import abc as cabc
 
-from tree_sitter import Language, Node, Parser, Point, Tree, TreeCursor
+import tree_sitter as ts
 
 from . import langs
 
@@ -30,8 +30,8 @@ class ParsedSyntax:
 
 @dcls.dataclass(frozen=True)
 class TreeSitterResult:
-    tree: Tree
-    syntax: Sequence[ParsedSyntax]
+    tree: ts.Tree
+    syntax: cabc.Sequence[ParsedSyntax]
 
     def __len__(self) -> int:
         return len(self.syntax)
@@ -39,13 +39,13 @@ class TreeSitterResult:
     def __getitem__(self, idx: int) -> ParsedSyntax:
         return self.syntax[idx]
 
-    def __iter__(self) -> Generator[ParsedSyntax]:
+    def __iter__(self) -> cabc.Generator[ParsedSyntax]:
         yield from self.syntax
 
 
 class TreeSitterFileParser:
-    def __init__(self, file: str | Path):
-        self._file = Path(file)
+    def __init__(self, file: str | pathlib.Path):
+        self._file = pathlib.Path(file)
         self._result: TreeSitterResult | None = None
 
     def __repr__(self) -> str:
@@ -63,11 +63,11 @@ class TreeSitterFileParser:
         return self._result
 
     @property
-    def file(self) -> Path:
+    def file(self) -> pathlib.Path:
         return self._file
 
     @property
-    def tree(self) -> Tree:
+    def tree(self) -> ts.Tree:
         return self.result.tree
 
     @property
@@ -80,18 +80,18 @@ class TreeSitterFileParser:
         return self.file.read_bytes()
 
 
-def parse_file_syntax(file: str | Path) -> list[ParsedSyntax]:
+def parse_file_syntax(file: str | pathlib.Path) -> list[ParsedSyntax]:
     """
     Parse the syntax types of a source file in occuring order.
     """
 
-    file = Path(file)
+    file = pathlib.Path(file)
     code = file.read_bytes()
     tree = parse_code_into_tree(code=code, filename=file)
     return parse_syntax_tree(code=code, tree=tree)
 
 
-def parse_code_into_tree(code: bytes, filename: str | Path) -> Tree:
+def parse_code_into_tree(code: bytes, filename: str | pathlib.Path) -> ts.Tree:
     """
     Parse the tree from the source file.
     """
@@ -104,14 +104,14 @@ def parse_code_into_tree(code: bytes, filename: str | Path) -> Tree:
             "Import not found. Try installing with `problolm[langs]` extras."
         ) from ie
 
-    language = Language(grammar_gen())
-    parser = Parser(language=language)
+    language = ts.Language(grammar_gen())
+    parser = ts.Parser(language=language)
     return parser.parse(code)
 
 
-def parse_syntax_tree(code: bytes, tree: Tree) -> list[ParsedSyntax]:
+def parse_syntax_tree(code: bytes, tree: ts.Tree) -> list[ParsedSyntax]:
     """
-    Parse the tree sitter `Tree` and convert each into their syntax nodes.
+    Parse the tree sitter `ts.Tree` and convert each into their syntax nodes.
     The nodes are ordered by their occurence in the original source.
     """
 
@@ -130,17 +130,17 @@ def parse_syntax_tree(code: bytes, tree: Tree) -> list[ParsedSyntax]:
     ]
 
 
-def _cmp_points(first: Point, second: Point) -> int:
+def _cmp_points(first: ts.Point, second: ts.Point) -> int:
     return (first.row - second.row) or (first.column - second.column)
 
 
-def flatten(tree: Tree) -> Generator[Node]:
+def flatten(tree: ts.Tree) -> cabc.Generator[ts.Node]:
     "Flatten the given tree into its internal nodes."
 
     yield from _flatten(tree.walk())
 
 
-def _flatten(cursor: TreeCursor) -> Generator[Node]:
+def _flatten(cursor: ts.TreeCursor) -> cabc.Generator[ts.Node]:
     assert cursor.node
     yield cursor.node
 

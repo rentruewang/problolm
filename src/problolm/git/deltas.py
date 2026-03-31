@@ -6,7 +6,7 @@ import dataclasses as dcls
 import pathlib
 import re
 import typing
-from collections.abc import Sequence
+from collections import abc as cabc
 
 from rich import markup, syntax
 
@@ -64,10 +64,10 @@ class Delta:
     def is_deleted(self) -> bool:
         return self.newer_path is None
 
-    def _older_text(self) -> Sequence[str]:
+    def _older_text(self) -> cabc.Sequence[str]:
         return _read_lines_from_commit_path(self.older, self.older_path)
 
-    def _newer_text(self) -> Sequence[str]:
+    def _newer_text(self) -> cabc.Sequence[str]:
         return _read_lines_from_commit_path(self.newer, self.newer_path)
 
     def __as_string(self, rich: bool) -> str:
@@ -115,7 +115,7 @@ _HUNK_REGEX = re.compile(r"^@@ -(\d+),(\d+) \+(\d+),(\d+) @@")
 
 def _read_lines_from_commit_path(
     commit: commits.Commit, path: str | None
-) -> Sequence[str]:
+) -> cabc.Sequence[str]:
     """
     Read text lines from commit and path.
     If the file at the path is binary or not exist, return `()`.

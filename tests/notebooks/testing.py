@@ -14,13 +14,13 @@
 
 # %%
 import torch
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+import transformers
 
 
 def calculate_perplexity(code_snippet):
     model_name = "gpt2"  # Or a code-specific model
-    model = GPT2LMHeadModel.from_pretrained(model_name)
-    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    model = transformers.GPT2LMHeadModel.from_pretrained(model_name)
+    tokenizer = transformers.GPT2Tokenizer.from_pretrained(model_name)
 
     inputs = tokenizer(code_snippet, return_tensors="pt")
     with torch.no_grad():

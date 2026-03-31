@@ -3,23 +3,20 @@
 "The commits class."
 
 import contextlib as ctxl
+import enum
 import functools
 import logging
 import typing
-from collections.abc import Generator
-from enum import StrEnum
-from enum import auto as Auto
-from typing import Self
+from collections import abc as cabc
 
 import fire
+import git
 import rich
-from git import BadName
 
 from . import repos
-from .fs import File, Folder
 
 if typing.TYPE_CHECKING:
-    from .ranges import CommitRange
+    from . import ranges
 
 __all__ = ["Commit", "CommitType"]
 
@@ -33,10 +30,10 @@ _SHA_LEN = 40
 "The length of SHA."
 
 
-class CommitType(StrEnum):
-    ROOT = Auto()
-    LINEAR = Auto()
-    MERGE = Auto()
+class CommitType(enum.StrEnum):
+    ROOT = enum.auto()
+    LINEAR = enum.auto()
+    MERGE = enum.auto()
 
 
 class Commit:
@@ -53,7 +50,7 @@ class Commit:
         try:
             self._long_sha: str = repos.working_git_repo().commit(sha_like).hexsha
             "The sha of the commit."
-        except BadName as bn:
+        except git.BadName as bn:
             raise ValueError from bn
 
         assert len(self._long_sha) == _SHA_LEN
@@ -64,17 +61,17 @@ class Commit:
     def __repr__(self) -> str:
         return f"Commit({self!s})"
 
-    def __sub__(self, other: str | Self):
-        from .ranges import CommitRange
+    def __sub__(self, other: str | typing.Self):
+        from . import ranges
 
         match other:
             # Is a sha.
             case str():
-                return CommitRange(newer=self, older=Commit(other))
+                return ranges.CommitRange(newer=self, older=Commit(other))
 
             # Must be in the same repo.
             case Commit():
-                return CommitRange(newer=self, older=other)
+                return ranges.CommitRange(newer=self, older=other)
 
         raise ValueError(f"{self=!r} incompatible with {other=!r}")
 
@@ -96,7 +93,7 @@ class Commit:
 
         return NotImplemented
 
-    def list_files(self) -> Generator[File]:
+    def list_files(self) -> cabc.Generator[fs.File]:
         file_system = self.fs()
         yield from file_system.list_files()
 
@@ -106,7 +103,7 @@ class Commit:
         assert self == commit.hexsha
         return commit
 
-    def fs(self) -> Folder:
+    def fs(self) -> fs.Folder:
         "Return the folder structure at the specific commit."
 
         return self.__fs
@@ -118,11 +115,11 @@ class Commit:
         return fs.consume(self)
 
     @property
-    def parents(self) -> list[Self]:
+    def parents(self) -> list[typing.Self]:
         return [type(self)(sha_like=p.hexsha) for p in self.git.parents]
 
     @property
-    def parent(self) -> Self:
+    def parent(self) -> typing.Self:
         if self.type != CommitType.LINEAR:
             raise ValueError(f"{self.type} should not be a merge commit.")
 
@@ -165,7 +162,7 @@ class Commit:
     def is_root(self) -> bool:
         return self.type == CommitType.ROOT
 
-    def _diff_parent(self) -> CommitRange:
+    def _diff_parent(self) -> ranges.CommitRange:
         return self - self.parent
 
     def show(self) -> None:
