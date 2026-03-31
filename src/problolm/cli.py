@@ -8,8 +8,8 @@ import os
 import statistics
 import typing
 from argparse import ArgumentParser, Namespace
-
 from collections import abc
+
 import torch
 from torch import cuda
 from torch import device as Device

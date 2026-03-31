@@ -3,30 +3,28 @@
 "The diff between files information."
 
 import dataclasses as dcls
+import pathlib
 import re
+import typing
 from collections.abc import Sequence
-from pathlib import Path
-from typing import NoReturn
 
-from rich import markup
-from rich.syntax import Syntax
+from rich import markup, syntax
 
 from problolm import diffs
 
-from .commits import Commit
-from .fs import File, Folder, TrieNode
+from . import commits, fs
 
 __all__ = ["Delta"]
 
 
-class _ReadLines(TrieNode.Visitor[list[str]]):
-    def visit_file(self, file: File) -> list[str]:
+class _ReadLines(fs.TrieNode.Visitor[list[str]]):
+    def visit_file(self, file: fs.File) -> list[str]:
         try:
             return file.read().splitlines()
         except UnicodeDecodeError:
             raise RuntimeError
 
-    def visit_folder(self, folder: Folder) -> NoReturn:
+    def visit_folder(self, folder: fs.Folder) -> typing.NoReturn:
         raise ValueError(f"Does not handle {folder=}")
 
 
@@ -36,13 +34,13 @@ class Delta:
     `Delta` is a `git.Diff` wrapper object, representing the diff between modes.
     """
 
-    older: Commit
+    older: commits.Commit
     "The older commit."
 
     older_path: str | None
     "The file in older commit. If none, means that it was newly created."
 
-    newer: Commit
+    newer: commits.Commit
     "The newer commit."
 
     newer_path: str | None
@@ -56,7 +54,7 @@ class Delta:
     @property
     def extension(self):
         path = self.older_path or self.newer_path or ""
-        return Path(path).suffix[1:]
+        return pathlib.Path(path).suffix[1:]
 
     @property
     def is_created(self) -> bool:
@@ -105,8 +103,8 @@ class Delta:
         return f"[{color}]{modifier}[/{color}]" + self.__highlight(rest)
 
     def __highlight(self, code: str):
-        syntax = Syntax(code, lexer=self.extension)
-        highlight = str(syntax.highlight(code))
+        s = syntax.Syntax(code, lexer=self.extension)
+        highlight = str(s.highlight(code))
         return highlight.rstrip("\n")
 
 
@@ -115,7 +113,9 @@ _SUB_REGEX = re.compile(r"(\-\-\- |\-)(.*)")
 _HUNK_REGEX = re.compile(r"^@@ -(\d+),(\d+) \+(\d+),(\d+) @@")
 
 
-def _read_lines_from_commit_path(commit: Commit, path: str | None) -> Sequence[str]:
+def _read_lines_from_commit_path(
+    commit: commits.Commit, path: str | None
+) -> Sequence[str]:
     """
     Read text lines from commit and path.
     If the file at the path is binary or not exist, return `()`.
