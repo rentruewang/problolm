@@ -12,10 +12,11 @@ import fire
 import git
 import rich
 
-from . import repos
+from .fs import consume
+from .repos import set_git_repo, working_git_repo
 
 if typing.TYPE_CHECKING:
-    from . import ranges
+    from .ranges import CommitRange
 
 __all__ = ["Commit", "CommitType"]
 
@@ -47,7 +48,7 @@ class Commit:
         """
 
         try:
-            self._long_sha: str = repos.working_git_repo().commit(sha_like).hexsha
+            self._long_sha: str = working_git_repo().commit(sha_like).hexsha
             "The sha of the commit."
         except git.BadName as bn:
             raise ValueError from bn
@@ -61,16 +62,16 @@ class Commit:
         return f"Commit({self!s})"
 
     def __sub__(self, other: str | typing.Self):
-        from . import ranges
+        from .ranges import CommitRange
 
         match other:
             # Is a sha.
             case str():
-                return ranges.CommitRange(newer=self, older=Commit(other))
+                return CommitRange(newer=self, older=Commit(other))
 
             # Must be in the same repo.
             case Commit():
-                return ranges.CommitRange(newer=self, older=other)
+                return CommitRange(newer=self, older=other)
 
         raise ValueError(f"{self=!r} incompatible with {other=!r}")
 
@@ -98,7 +99,7 @@ class Commit:
 
     @property
     def git(self):
-        commit = repos.working_git_repo().commit(str(self.sha))
+        commit = working_git_repo().commit(str(self.sha))
         assert self == commit.hexsha
         return commit
 
@@ -109,9 +110,9 @@ class Commit:
 
     @functools.cached_property
     def __fs(self):
-        from . import fs
+        pass
 
-        return fs.consume(self)
+        return consume(self)
 
     @property
     def parents(self) -> list[typing.Self]:
@@ -161,7 +162,7 @@ class Commit:
     def is_root(self) -> bool:
         return self.type == CommitType.ROOT
 
-    def _diff_parent(self) -> ranges.CommitRange:
+    def _diff_parent(self) -> CommitRange:
         return self - self.parent
 
     def show(self) -> None:
@@ -211,14 +212,14 @@ class Commit:
 
 def head_commit() -> Commit:
     "Get the commit at the HEAD."
-    return Commit(repos.working_git_repo().head.commit.hexsha)
+    return Commit(working_git_repo().head.commit.hexsha)
 
 
 def git_show_cmd() -> None:
     "The show command that is exposed publically via [project.scripts]."
 
     def show(sha: str = ""):
-        with repos.set_git_repo("."):
+        with set_git_repo("."):
             commit = Commit(sha) if sha else head_commit()
             commit.show()
 

@@ -13,7 +13,7 @@ import git
 from rich import tree
 
 if typing.TYPE_CHECKING:
-    from . import commits
+    from .commits import Commit
 
 __all__ = ["TrieNode", "Folder", "File"]
 
@@ -32,7 +32,7 @@ class TrieNode(abc.ABC):
         @abc.abstractmethod
         def visit_file(self, file: File, /) -> T: ...
 
-    commit: commits.Commit
+    commit: Commit
     path: str
     parent: TrieNode | None
 
@@ -183,7 +183,7 @@ class Folder(TrieNode):
         return list(self.items.values())
 
     @classmethod
-    def init_root_for(cls, commit: commits.Commit) -> typing.Self:
+    def init_root_for(cls, commit: Commit) -> typing.Self:
         return cls(commit=commit, path="", parent=None)
 
 
@@ -242,7 +242,7 @@ class File(TrieNode):
         return []
 
 
-def consume(commit: commits.Commit, /) -> Folder:
+def consume(commit: Commit, /) -> Folder:
     """
     Consume the object (must be a git tree), and produce the folder structure.
 

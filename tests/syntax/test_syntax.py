@@ -6,7 +6,7 @@ from collections import abc as cabc
 import pytest
 import tree_sitter as ts
 
-import problolm
+from problolm import TreeSitterFileParser
 
 
 def _cases():
@@ -27,7 +27,7 @@ def case(request) -> pathlib.Path:
 
 
 def test_parse_case(case) -> None:
-    parser = problolm.TreeSitterFileParser(case)
+    parser = TreeSitterFileParser(case)
     result = parser.parse()
     assert all(isinstance(i.grammar, str) for i in result)
 
@@ -40,6 +40,6 @@ def _flatten_children(tree: ts.Node) -> cabc.Generator[ts.Node]:
 
 
 def test_tree_generator(case):
-    parser = problolm.TreeSitterFileParser(case)
+    parser = TreeSitterFileParser(case)
     result = parser.parse()
     assert len(result) == len(list(_flatten_children(result.tree.root_node)))

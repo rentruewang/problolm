@@ -9,22 +9,22 @@ import typing
 
 import github3
 
-__all__ = ["github_repo", "github_ref", "github_event"]
+__all__ = ["github_repo", "github_ref_env", "github_event"]
 
 
-def github_repo() -> str:
+def github_repo_env() -> str:
     "Get the current repo in the `owner/repo` format."
 
     return os.environ["GITHUB_REPOSITORY"]
 
 
-def github_token() -> str:
+def github_token_env() -> str:
     "Get the github token for authentication."
 
     return os.environ["GITHUB_TOKEN"]
 
 
-def github_ref():
+def github_ref_env():
     "Get info about the current ref."
 
     return os.environ["GITHUB_REF"]
@@ -58,7 +58,7 @@ def github_event():
 @functools.cache
 @typing.no_type_check
 def login() -> github3.GitHub:
-    token = github_token()
+    token = github_token_env()
 
     if session := github3.login(token=token):
         return session
