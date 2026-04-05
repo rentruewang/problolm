@@ -10,21 +10,22 @@ from collections import abc as cabc
 
 from rich import markup, syntax
 
-from problolm import diffs
+from problolm.diffs import unified_diff
 
-from . import commits, fs
+from .commits import Commit
+from .fs import File, Folder, TrieNode
 
 __all__ = ["Delta"]
 
 
-class _ReadLines(fs.TrieNode.Visitor[list[str]]):
-    def visit_file(self, file: fs.File) -> list[str]:
+class _ReadLines(TrieNode.Visitor[list[str]]):
+    def visit_file(self, file: File) -> list[str]:
         try:
             return file.read().splitlines()
         except UnicodeDecodeError:
             raise RuntimeError
 
-    def visit_folder(self, folder: fs.Folder) -> typing.NoReturn:
+    def visit_folder(self, folder: Folder) -> typing.NoReturn:
         raise ValueError(f"Does not handle {folder=}")
 
 
@@ -34,13 +35,13 @@ class Delta:
     `Delta` is a `git.Diff` wrapper object, representing the diff between modes.
     """
 
-    older: commits.Commit
+    older: Commit
     "The older commit."
 
     older_path: str | None
     "The file in older commit. If none, means that it was newly created."
 
-    newer: commits.Commit
+    newer: Commit
     "The newer commit."
 
     newer_path: str | None
@@ -75,7 +76,7 @@ class Delta:
         return "\n".join(self.maybe_color_line_diffs(color=rich))
 
     def maybe_color_line_diffs(self, color: bool):
-        text = diffs.unified_diff(
+        text = unified_diff(
             a=self._older_text(),
             b=self._newer_text(),
             fromfile=self.older_path or "",
@@ -114,7 +115,7 @@ _HUNK_REGEX = re.compile(r"^@@ -(\d+),(\d+) \+(\d+),(\d+) @@")
 
 
 def _read_lines_from_commit_path(
-    commit: commits.Commit, path: str | None
+    commit: Commit, path: str | None
 ) -> cabc.Sequence[str]:
     """
     Read text lines from commit and path.

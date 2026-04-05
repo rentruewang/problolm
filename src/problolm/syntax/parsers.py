@@ -10,7 +10,7 @@ from collections import abc as cabc
 
 import tree_sitter as ts
 
-from . import langs
+from .langs import grammar_for_file
 
 __all__ = ["TreeSitterFileParser", "ParsedSyntax"]
 
@@ -98,7 +98,7 @@ def parse_code_into_tree(code: bytes, filename: str | pathlib.Path) -> ts.Tree:
 
     # Get grammar. This requires external tree-sitter-* libraries.
     try:
-        grammar_gen = langs.grammar_for_file(filename)
+        grammar_gen = grammar_for_file(filename)
     except ImportError as ie:
         raise ImportError(
             "Import not found. Try installing with `problolm[langs]` extras."

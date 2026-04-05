@@ -4,7 +4,7 @@ import typing
 
 import pytest
 
-import problolm
+from problolm import grammar_for_file, grammar_for_lang, guess_from_filename
 
 
 class FileLang(typing.NamedTuple):
@@ -43,14 +43,14 @@ def file_names_and_types():
 
 @pytest.mark.parametrize("fname, ftype", file_names_and_types())
 def test_guess_file_type(fname: str, ftype: str):
-    assert problolm.guess_from_filename(fname) == ftype
+    assert guess_from_filename(fname) == ftype
 
 
 @pytest.mark.parametrize("file_lang", file_names_and_types())
 def test_grammar_for_file(file_lang: FileLang):
-    assert callable(problolm.grammar_for_file(file_lang.file))
+    assert callable(grammar_for_file(file_lang.file))
 
 
 @pytest.mark.parametrize("file_lang", file_names_and_types())
 def test_grammar_for_lang(file_lang: FileLang):
-    assert callable(problolm.grammar_for_lang(file_lang.lang))
+    assert callable(grammar_for_lang(file_lang.lang))

@@ -4,13 +4,13 @@ import pathlib
 
 import pytest
 
-import problolm
-from problolm.git import commits
+from problolm import Commit, CommitRange, set_git_repo
+from problolm.git.commits import set_short_sha_size
 
 
 @pytest.fixture(scope="module", autouse=True)
 def set_repo_to_problolm(repo_root: pathlib.Path):
-    with problolm.set_git_repo(path=str(repo_root)):
+    with set_git_repo(path=str(repo_root)):
         yield
 
 
@@ -20,41 +20,39 @@ def _commits():
 
 
 @pytest.fixture(scope="module", params=_commits())
-def commit(request: pytest.FixtureRequest) -> problolm.Commit:
-    return problolm.Commit(request.param)
+def commit(request: pytest.FixtureRequest) -> Commit:
+    return Commit(request.param)
 
 
 @pytest.fixture(scope="module")
-def parent(commit) -> problolm.Commit:
+def parent(commit) -> Commit:
     return commit.parent
 
 
 @pytest.fixture(scope="module")
-def commit_changes(
-    commit: problolm.Commit, parent: problolm.Commit
-) -> problolm.CommitRange:
-    return problolm.CommitRange(commit, parent)
+def commit_changes(commit: Commit, parent: Commit) -> CommitRange:
+    return CommitRange(commit, parent)
 
 
-def test_commits_eq(commit: problolm.Commit):
-    with commits.set_short_sha_size(9):
+def test_commits_eq(commit: Commit):
+    with set_short_sha_size(9):
         short_commit = commit.short_sha
     assert commit == short_commit
 
 
-def test_commit_ne(commit: problolm.Commit, parent: problolm.Commit):
+def test_commit_ne(commit: Commit, parent: Commit):
     assert commit != parent
     assert commit.parent == parent
 
 
 def test_commit_range_eq(
-    commit: problolm.Commit,
-    parent: problolm.Commit,
-    commit_changes: problolm.CommitRange,
+    commit: Commit,
+    parent: Commit,
+    commit_changes: CommitRange,
 ):
     assert commit_changes == commit - parent
     assert commit_changes == commit
 
 
-def test_show(commit: problolm.Commit):
+def test_show(commit: Commit):
     commit.show()

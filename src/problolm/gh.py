@@ -10,7 +10,8 @@ from collections import abc as cabc
 
 from github3 import exceptions, pulls, repos
 
-from . import envs, git
+from .envs import github_event, github_ref_env, github_repo_env, login
+from .git import Commit
 
 __all__ = ["GitHubRepo", "GitHubPr", "github_repo", "github_pull_request"]
 
@@ -52,7 +53,7 @@ class GitHubRepo:
 
     @classmethod
     def from_owner_slug(cls, owner: str, slug: str):
-        if repo := envs.login().repository(owner=owner, repository=slug):
+        if repo := login().repository(owner=owner, repository=slug):
             return cls(owner=owner, slug=slug, github3=repo)
 
         raise ValueError(
@@ -73,7 +74,7 @@ def github_repo(repo: str = "") -> GitHubRepo:
         A repo object.
     """
 
-    repo = repo or envs.github_repo()
+    repo = repo or github_repo_env()
     return GitHubRepo.from_name(repo)
 
 
@@ -104,16 +105,16 @@ class GitHubPr:
     def __str__(self) -> str:
         return self.url
 
-    def __iter__(self) -> cabc.Generator[git.Commit]:
+    def __iter__(self) -> cabc.Generator[Commit]:
         yield from self.commits()
 
     @property
     def url(self):
         return f"{self.repo.url}/pull/{self.number}"
 
-    def commits(self) -> cabc.Generator[git.Commit]:
+    def commits(self) -> cabc.Generator[Commit]:
         for commit in self.github3.commits():
-            yield git.Commit(commit.sha)
+            yield Commit(commit.sha)
 
     def patch(self) -> str:
         return self.github3.patch().decode()
@@ -141,12 +142,12 @@ def _parse_env_pr_num():
     # If `github_event()` is not PR, or raises and error,
     # re-raise a `ValueError`.
     try:
-        if envs.github_event() != "pull_request":
+        if github_event() != "pull_request":
             raise NotImplementedError
     except NotImplementedError:
         raise ValueError("Only works with PR.")
 
-    ref = envs.github_ref()
+    ref = github_ref_env()
 
     if not (merge := re.fullmatch(r"refs/pull/(\d+)/merge", ref)):
         raise ValueError(f"Cannot parse PR {merge}.")
