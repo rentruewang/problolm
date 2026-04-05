@@ -17,6 +17,7 @@ from .repos import set_git_repo, working_git_repo
 
 if typing.TYPE_CHECKING:
     from .ranges import CommitRange
+
 __all__ = ["Commit", "CommitType"]
 
 LOGGER = logging.getLogger(__name__)
