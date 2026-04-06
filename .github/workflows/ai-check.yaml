@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.14'
 
       - name: Get pip cache dir
         id: pip-cache
@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install torch transformers
+          pip install -e .
 
       - name: Get changed files
         id: files
