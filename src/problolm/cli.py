@@ -265,6 +265,7 @@ def analyze_changes() -> int:
         threshold=args.threshold,
     )
 
+    # Keep per-file exit behavior simple: any flagged file fails the overall run.
     analysis_results = [
         analyze_file(path, models, device=device, config=config) for path in files
     ]
