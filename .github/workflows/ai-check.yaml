@@ -44,20 +44,10 @@ jobs:
 
       - name: Get changed files
         id: files
+        env:
+          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            # For PRs, compare against the base branch
-            files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.py$$' || true)
-          else
-            # For push events
-            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-              # First commit - check all Python files in the commit
-              files=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep '\.py$$' || true)
-            else
-              # Regular push - compare with previous commit
-              files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.py$$' || true)
-            fi
-          fi
+          files=$(python scripts/changed_files.py)
           # Save files as multi-line string to handle spaces in filenames
           echo "changed_files<<EOF" >> $GITHUB_ENV
           echo "$files" >> $GITHUB_ENV
