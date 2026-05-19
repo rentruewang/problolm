@@ -8,6 +8,7 @@ dependencies = [
     "rich>=14.3.3",
     "github3-py>=4.0.1",
     "pandas>=3.0.3",
+    "fire>=0.7.1",
 ]
 
 requires-python = ">=3.14,<3.15"
@@ -41,7 +42,7 @@ tests = [
 ]
 
 [project.scripts]
-show = "problolm.git.commits:git_show_cmd"
+show = "scripts.git.commits:git_show_cmd"
 
 [tool.autoflake]
 in-place = true

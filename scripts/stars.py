@@ -1,12 +1,13 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-from rich import progress
-from .consts import github
 import pandas as pd
 from github3 import exceptions as gh_exc
+from rich import progress
+
+from .consts import github
 
 
-def get_all_user_stars(username: str):
+def get_all_stars(username: str):
     print(f"Fetching all stars for user: {username}...")
 
     try:
@@ -41,5 +42,12 @@ def get_all_user_stars(username: str):
         return pd.DataFrame(answer)
     except gh_exc.ForbiddenError:
         print("\nRate limit hit! Anonymous requests are limited to 60 per hour.")
+        raise
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+        raise
+
+
+def main(username: str, to: str):
+    result = get_all_stars(username)
+    result.to_csv(to)

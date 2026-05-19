@@ -1,7 +1,10 @@
 # Copyright (c) ProBloLM Authors - All Rights Reserved
 
-import github3
 import os
+
+import github3
+
+__all__ = ["github", "AI_KWDS"]
 
 
 def github(token: str | None = None):
@@ -18,7 +21,7 @@ def github(token: str | None = None):
     return gh
 
 
-AI_KEYWORD = [
+AI_KWDS = [
     "claude",
     "codex",
     "copilot",
