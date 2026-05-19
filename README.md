@@ -2,7 +2,9 @@
 
 ### Blocking low quality PRs by LLM
 
-**PR** *O*pen **Blo**ck **LM**
+![](./assets/problolm.svg)
+
+### **PR** *O*pen **Blo**ck **LM**
 
 PR: Pull request
 O: Opened
