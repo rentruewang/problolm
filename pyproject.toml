@@ -35,6 +35,10 @@ dev = [
     "nox[pbs]>=2026.2.9",
     "pip>=26.0.1",
 ]
+tests = [
+    "pytest>=9.0.3",
+    "pytest-xdist>=3.8.0",
+]
 
 [project.scripts]
 show = "problolm.git.commits:git_show_cmd"
