@@ -19,7 +19,7 @@ def check_commit_ai(owner: str, repo_name: str, commits: int = 1000):
         raise ValueError
     assert isinstance(repo, repos.Repository)
 
-    found_hits = []
+    found_hits: list[dict[str, typing.Any]] = []
     commit_count = 0
 
     # Scanning commits (the API handles trailers in the message and author fields)
