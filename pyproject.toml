@@ -42,7 +42,6 @@ tests = [
 ]
 
 [project.scripts]
-show = "scripts.git.commits:git_show_cmd"
 
 [tool.autoflake]
 in-place = true
